@@ -3,15 +3,10 @@ Created on Apr 8, 2016
 
 @author: William
 '''
-import logging
-import tornado.escape
 import tornado.ioloop
 import tornado.web
 import os.path
-import uuid
 
-from tornado.concurrent import Future
-from tornado import gen
 from tornado.options import define, options, parse_command_line
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joule.settings")

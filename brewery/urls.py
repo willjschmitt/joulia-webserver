@@ -4,8 +4,8 @@ Created on Apr 9, 2016
 @author: William
 '''
 
-from views import MainHandler
-from views import TimeSeriesNewHandler,TimeSeriesSocketHandler,TimeSeriesIdentifyHandler
+from .views import MainHandler
+from .views import TimeSeriesNewHandler,TimeSeriesSocketHandler,TimeSeriesIdentifyHandler
 
 urlpatterns = [
     (r"/", MainHandler),
