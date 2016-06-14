@@ -131,9 +131,8 @@ class TimeSeriesNewHandler(tornado.web.RequestHandler):
                 newDataPoint[fieldName] = field.related_model.objects.get(pk=self.get_argument(fieldName))
             else:
                 newDataPoint[fieldName] = self.get_body_argument(fieldName)
-                if newDataPoint[fieldName] == 'true': newDataPoint[fieldName] = True
-                if newDataPoint[fieldName] == 'false': newDataPoint[fieldName] = False
-        logging.debug(newDataPoint)
+                if newDataPoint[fieldName] in ['true','True']: newDataPoint[fieldName] = True
+                if newDataPoint[fieldName] in ['false','False']: newDataPoint[fieldName] = False
         TimeSeriesDataPoint(**newDataPoint).save()
 
 class TimeSeriesIdentifyHandler(tornado.web.RequestHandler):
