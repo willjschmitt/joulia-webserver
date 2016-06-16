@@ -1,4 +1,4 @@
-define(['angularAMD','underscore','jquery','moment',
+define(['angularAMD','underscore','jquery',
            "prettify","perfect-scrollbar","icheck","bootstrap-select",
            "datatables.net","jquery_fullscreen",
            "moment",
@@ -12,7 +12,7 @@ define(['angularAMD','underscore','jquery','moment',
            "jquery-ui","bootstrap","modernizr",
            
            'timeseries',"toggleable-element",'value-card','dial',
-    ],function(angularAMD,_,$,moment){
+    ],function(angularAMD,_,$){
 	var app = angular.module('dashboard', [])
 	.controller('dashboardController',['$scope','$timeout','$interval','timeSeriesUpdater',function($scope,$timeout,$interval,timeSeriesUpdater){
 		function getCookie(name) {
@@ -33,8 +33,6 @@ define(['angularAMD','underscore','jquery','moment',
 		$scope.systemEnergyCost = new timeSeriesUpdater($scope.recipeInstance,'systemEnergyCost');
 		$scope.currentStatus = new timeSeriesUpdater($scope.recipeInstance,'state');
 		$scope.timer = new timeSeriesUpdater($scope.recipeInstance,'timer');
-		$scope.requestPermission = new timeSeriesUpdater($scope.recipeInstance,'requestPermission');
-		$scope.grantPermission = new timeSeriesUpdater($scope.recipeInstance,'grantPermission');
 		
 		var statuses = [
 		    "System is currently offline.",
@@ -55,12 +53,7 @@ define(['angularAMD','underscore','jquery','moment',
 			$scope.currentStatusText = statuses[$scope.currentStatus.latest];
 			$scope.nextStatusText = statuses[$scope.currentStatus.latest + 1];
 		},true);
-		$scope.adjustState = function(amount){
-			if ($scope.requestPermission.latest && amount==+1)
-				$scope.grantPermission.set(true);
-			else
-				$scope.currentStatus.set($scope.currentStatus.latest + amount);
-		};
+		$scope.adjustState = function(amount){$scope.currentStatus.set($scope.currentStatus.latest + amount);};
 		
 		//add all the relevant time series to the chart data.
 		$scope.dataPoints = [];
@@ -68,18 +61,9 @@ define(['angularAMD','underscore','jquery','moment',
 		$scope.dataPoints.push({'key':'Boil Set Point','values':$scope.boilTemperatureSetPoint.dataPoints});
 		$scope.dataPoints.push({'key':'Mash Actual',values:$scope.mashTemperatureActual.dataPoints});
 		$scope.dataPoints.push({'key':'Mash Set Point','values':$scope.mashTemperatureSetPoint.dataPoints});
+	
 		
-		//watch for permission request
-		$scope.nextStateColor = 'btn-success';
-		$interval(function(){
-			if ($scope.requestPermission.latest)
-				if ($scope.nextStateColor == 'btn-success')
-					$scope.nextStateColor = 'btn-danger';
-				else
-					$scope.nextStateColor = 'btn-success';
-			else
-				$scope.nextStateColor = 'btn-success';
-		},500);
+		
 		
 		//overridable statuses - sensor ids for the child elements
 		$scope.heatingElementStatusSensor = 9;
