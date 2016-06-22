@@ -9,11 +9,13 @@ import tornado.websocket
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
 from brewery.models import Brewery
 from brewery.models import AssetSensor
 from brewery.models import TimeSeriesDataPoint
+from brewery.serializers import TimeSeriesDataPointSerializer
 
-from django.db.models import ForeignKey
+# from django.db.models import ForeignKey
 
 import logging
 
@@ -69,17 +71,17 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
         if self not in TimeSeriesSocketHandler.subscriptions[key]: #protect against double subscriptions
             TimeSeriesSocketHandler.subscriptions[key].add(self)
     
-    def newData(self,parsedMessage):
-        logging.debug('New data')
-        fields = ('recipe_instance','sensor','time','value',)
-        newDataPoint = {}
-        for fieldName in fields:
-            field = TimeSeriesDataPoint._meta.get_field(fieldName)
-            if field.is_relation:
-                newDataPoint[fieldName] = field.related_model.objects.get(pk=parsedMessage[fieldName])
-            else:
-                newDataPoint[fieldName] = parsedMessage[fieldName]
-        TimeSeriesDataPoint(**newDataPoint).save()
+#     def newData(self,parsedMessage):
+#         logging.debug('New data')
+#         fields = ('recipe_instance','sensor','time','value',)
+#         newDataPoint = {}
+#         for fieldName in fields:
+#             field = TimeSeriesDataPoint._meta.get_field(fieldName)
+#             if field.is_relation:
+#                 newDataPoint[fieldName] = field.related_model.objects.get(pk=parsedMessage[fieldName])
+#             else:
+#                 newDataPoint[fieldName] = parsedMessage[fieldName]
+#         TimeSeriesDataPoint(**newDataPoint).save()
         
     '''
     Cache handling helper functions
@@ -93,23 +95,16 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     @classmethod
     def send_updates(cls, newDataPoint):
         logging.info("sending message to %d waiters", len(cls.waiters))
-        key = (newDataPoint['recipe_instance'],newDataPoint['sensor'])
+        key = (newDataPoint.recipe_instance.pk,newDataPoint.sensor.pk)
         if key in cls.subscriptions:
             for waiter in cls.subscriptions[key]:
                 try:
-                    waiter.write_message(newDataPoint)
+                    serializer = TimeSeriesDataPointSerializer(newDataPoint)
+                    waiter.write_message(serializer.data)
                 except:
                     logging.error("Error sending message", exc_info=True)
         
 @receiver(post_save, sender=TimeSeriesDataPoint)
 def timeSeriesWatcher(sender, instance, **kwargs):
-    fields = ('id','recipe_instance','sensor','time','value',)
-    newDataPoint = {}
-    for fieldName in fields:
-        field = instance._meta.get_field(fieldName)
-        if isinstance(field, ForeignKey):
-            newDataPoint[fieldName] = getattr(instance,fieldName).pk
-        else:
-            newDataPoint[fieldName] = getattr(instance,fieldName)
-    TimeSeriesSocketHandler.update_cache(newDataPoint)
-    TimeSeriesSocketHandler.send_updates(newDataPoint)
+    TimeSeriesSocketHandler.update_cache(instance)
+    TimeSeriesSocketHandler.send_updates(instance)
