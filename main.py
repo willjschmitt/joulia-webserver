@@ -16,14 +16,12 @@ if django.VERSION[1] > 5:
     django.setup()
 
 import tornado_sockets.urls
-import uimodules
 
 define("port", default=8888, help="run on the given port", type=int)
 define("debug", default=False, help="run in debug mode")
 
 def main():
     settings = {
-        "ui_modules":uimodules,
         "cookie_secret":"k+IsuNhvAjanlxg4Q5cV3fPgAw284Ev7fF7QzvYi1Yw=",
         "template_path":os.path.join(os.path.dirname(__file__), "templates"),
         "static_path":os.path.join(os.path.dirname(__file__), "static"),

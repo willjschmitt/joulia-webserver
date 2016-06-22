@@ -19,11 +19,6 @@ from brewery.serializers import TimeSeriesDataPointSerializer
 
 import logging
 
-# Create your views here.
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.render("index.html",brewery=Brewery.objects.get(pk=1))
-
 class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     waiters = set()
     cache = []

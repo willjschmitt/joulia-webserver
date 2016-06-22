@@ -11,6 +11,11 @@ from rest_framework.response import Response
 
 import logging
 
+# # Create your views here.
+# class MainHandler(tornado.web.RequestHandler):
+#     def get(self):
+#         self.render("index.html",brewery=Brewery.objects.get(pk=1))
+
 class TimeSeriesNewHandler(generics.CreateAPIView):
     queryset = TimeSeriesDataPoint.objects.all()
     serializer_class = TimeSeriesDataPointSerializer
