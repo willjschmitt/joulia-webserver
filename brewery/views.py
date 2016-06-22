@@ -1,5 +1,3 @@
-import tornado.web
-
 from django.core.exceptions import ObjectDoesNotExist
 
 from .models import Asset,AssetSensor
