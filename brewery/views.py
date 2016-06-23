@@ -23,9 +23,9 @@ class TimeSeriesNewHandler(generics.CreateAPIView):
 class TimeSeriesIdentifyHandler(APIView):
     def post(self,request,*args,**kwargs):
         try:#see if we can ge an existing AssetSensor
-            sensor = AssetSensor.objects.get(name=request.POST['name'],asset=Asset.objects.get(id=1))#TODO: programatically get asset
+            sensor = AssetSensor.objects.get(name=request.data['name'],asset=Asset.objects.get(id=1))#TODO: programatically get asset
         except ObjectDoesNotExist: #otherwise create one for recording data
-            logging.debug('Creating new asset sensor {} for asset {}'.format(request.POST['name'],1))
-            sensor = AssetSensor(name=request.POST['name'],asset=Asset.objects.get(id=1))#TODO: programatically get asset
+            logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],1))
+            sensor = AssetSensor(name=request.data['name'],asset=Asset.objects.get(id=1))#TODO: programatically get asset
             sensor.save()
         return Response({'sensor':sensor.pk})

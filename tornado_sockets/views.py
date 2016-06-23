@@ -58,6 +58,7 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     '''      
     def subscribe(self,parsedMessage):
         logging.debug('Subscribing')
+        print(parsedMessage)
         if 'sensor' not in parsedMessage:
             parsedMessage['sensor'] = AssetSensor.objects.get(sensor=parsedMessage['sensor'],asset=1)#TODO: programatically get asset
             
