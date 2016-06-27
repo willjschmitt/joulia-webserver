@@ -15,14 +15,13 @@ Including another URLconf
 """
 
 from django.conf.urls import url,include
-# from django.contrib.auth import views as auth_views
-from django.views.generic import TemplateView
+
 from django.contrib.auth.decorators import login_required
 
-# from . import views
+from .views import IndexView
 
 urlpatterns = [
-    url(r'^$', login_required(TemplateView.as_view(template_name='index.html'))),
+    url(r'^$', login_required(IndexView.as_view())),
     url(r'^', include('django.contrib.auth.urls')),
 #     url('^change-password/',auth_views.password_change,{'template_name': 'change-password.html'}),
     url('^', include('brewery.urls'))
