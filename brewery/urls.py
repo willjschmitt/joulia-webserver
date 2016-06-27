@@ -4,13 +4,10 @@ Created on Apr 9, 2016
 @author: William
 '''
 
-from .views import MainHandler
-from .views import TimeSeriesNewHandler,TimeSeriesSocketHandler,TimeSeriesIdentifyHandler
+from django.conf.urls import url
+from .views import TimeSeriesNewHandler,TimeSeriesIdentifyHandler
 
 urlpatterns = [
-    (r"/", MainHandler),
-    (r"/live/timeseries/new/", TimeSeriesNewHandler),
-    (r"/live/timeseries/identify/", TimeSeriesIdentifyHandler),
-    #(r"/live/timeseries/subscribe/", TimeSeriesSubscribeHandler),
-    (r"/live/timeseries/socket/", TimeSeriesSocketHandler),
+    url(r"live/timeseries/new/$", TimeSeriesNewHandler.as_view()),
+    url(r"live/timeseries/identify/$", TimeSeriesIdentifyHandler.as_view()),
 ]

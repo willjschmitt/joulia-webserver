@@ -14,8 +14,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
 
-import brewery.urls
+from django.conf.urls import url,include
 
-urlpatterns = ([] +
-    brewery.urls.urlpatterns
-)
+from django.contrib.auth.decorators import login_required
+
+from .views import IndexView
+
+urlpatterns = [
+    url(r'^$', login_required(IndexView.as_view())),
+    url(r'^', include('django.contrib.auth.urls')),
+#     url('^change-password/',auth_views.password_change,{'template_name': 'change-password.html'}),
+    url('^', include('brewery.urls'))
+]

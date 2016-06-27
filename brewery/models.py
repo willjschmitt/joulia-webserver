@@ -25,7 +25,7 @@ class AssetSensor(models.Model):
     asset = models.ForeignKey(Asset)
     
     def __unicode__(self):
-        return u"{}-{}".format(self.asset,self.name)
+        return u"{}-{}".format(unicode(self.asset),self.name)
     
 class HeatedVessel(Asset):
     brewery = models.ForeignKey(Brewery)
