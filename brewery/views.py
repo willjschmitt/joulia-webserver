@@ -2,8 +2,10 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from .models import Asset,AssetSensor
 from .models import TimeSeriesDataPoint
+from .models import Recipe
 
 from .serializers import TimeSeriesDataPointSerializer
+from .serializers import RecipeSerializer
 
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -11,10 +13,9 @@ from rest_framework.response import Response
 
 import logging
 
-# # Create your views here.
-# class MainHandler(tornado.web.RequestHandler):
-#     def get(self):
-#         self.render("index.html",brewery=Brewery.objects.get(pk=1))
+class RecipeListView(generics.ListCreateAPIView):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
 
 class TimeSeriesNewHandler(generics.CreateAPIView):
     queryset = TimeSeriesDataPoint.objects.all()
