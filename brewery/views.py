@@ -3,9 +3,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from .models import Asset,AssetSensor
 from .models import TimeSeriesDataPoint
 from .models import Recipe
+from .models import Brewery
 
 from .serializers import TimeSeriesDataPointSerializer
 from .serializers import RecipeSerializer
+from .serializers import BrewerySerializer
 
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -16,6 +18,10 @@ import logging
 class RecipeListView(generics.ListCreateAPIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    
+class BreweryListView(generics.ListCreateAPIView):
+    queryset = Brewery.objects.all()
+    serializer_class = BrewerySerializer
 
 class TimeSeriesNewHandler(generics.CreateAPIView):
     queryset = TimeSeriesDataPoint.objects.all()
