@@ -7,7 +7,7 @@ Created on Apr 9, 2016
 from django.conf.urls import url
 from .views import TimeSeriesNewHandler,TimeSeriesIdentifyHandler
 
-from .views import RecipeListView,BreweryListView
+from .views import RecipeListView,BreweryListView,BeerStyleListView
 
 urlpatterns = [
     url(r"live/timeseries/new/$", TimeSeriesNewHandler.as_view()),
@@ -16,4 +16,5 @@ urlpatterns = [
     
     url(r"api/recipe$", RecipeListView.as_view()),
     url(r"api/brewery$", BreweryListView.as_view()),
+    url(r"api/beerStyle", BeerStyleListView.as_view()),
 ]
