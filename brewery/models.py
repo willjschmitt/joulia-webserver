@@ -7,8 +7,13 @@ class Brewery(models.Model):
     name = models.CharField(max_length=64)
     location = models.CharField(max_length=64)
 
+class BeerStyle(models.Model):
+    name = models.CharField(max_length=128,unique=True)
+
 class Recipe(models.Model):
     name = models.CharField(max_length=64)
+    style = models.ForeignKey(BeerStyle,null=True)
+    
 
 class RecipeInstance(models.Model):
     recipe = models.ForeignKey(Recipe)
