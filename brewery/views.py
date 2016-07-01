@@ -74,8 +74,7 @@ def end_recipe_instance(request):
 
     data = json.loads(request.body)
     
-    recipe_instance_id = models.Recipe.objects.get(pk=data['recipe_instance'])
-    recipe_instance = models.RecipeInstance.objects.get(pk=recipe_instance_id)
+    recipe_instance = models.RecipeInstance.objects.get(pk=data['recipe_instance'])
     recipe_instance.active = False
     recipe_instance.save()
     
