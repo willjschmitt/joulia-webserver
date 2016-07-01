@@ -6,6 +6,10 @@ from datetime import datetime
 class Brewery(models.Model):
     name = models.CharField(max_length=64)
     location = models.CharField(max_length=64)
+    
+    @property
+    def active(self):
+        return self.recipeinstance_set.filter(active=True).count() > 0
 
 class BeerStyle(models.Model):
     name = models.CharField(max_length=128,unique=True)
@@ -18,6 +22,8 @@ class Recipe(models.Model):
 class RecipeInstance(models.Model):
     recipe = models.ForeignKey(Recipe)
     date = models.DateField(default=datetime.now)
+    brewery = models.ForeignKey(Brewery,null=True)
+    active = models.BooleanField(default=False)
 
 class Asset(models.Model):
     name=models.CharField(max_length=64)
