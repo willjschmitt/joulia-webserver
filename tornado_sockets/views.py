@@ -58,12 +58,12 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     '''      
     def subscribe(self,parsedMessage):
         logging.debug('Subscribing')
-        print(parsedMessage)
         if 'sensor' not in parsedMessage:
             parsedMessage['sensor'] = AssetSensor.objects.get(sensor=parsedMessage['sensor'],asset=1)#TODO: programatically get asset
             
         key = (parsedMessage['recipe_instance'],parsedMessage['sensor'])
-        if key not in TimeSeriesSocketHandler.subscriptions: TimeSeriesSocketHandler.subscriptions[key] = set()
+        if key not in TimeSeriesSocketHandler.subscriptions: 
+            TimeSeriesSocketHandler.subscriptions[key] = set()
         if self not in TimeSeriesSocketHandler.subscriptions[key]: #protect against double subscriptions
             TimeSeriesSocketHandler.subscriptions[key].add(self)
     
