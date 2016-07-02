@@ -18,6 +18,7 @@ from brewery.serializers import TimeSeriesDataPointSerializer
 # from django.db.models import ForeignKey
 
 import logging
+logger = logging.getLogger(__name__)
 
 class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     waiters = set()
@@ -34,9 +35,9 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     Core websocket functions
     '''
     def open(self):
-        logging.info("New websocket connection incomming {}".format(self))
+        logger.info("New websocket connection incomming {}".format(self))
         TimeSeriesSocketHandler.waiters.add(self)
-        logging.info("returning {}".format(self))
+        logger.info("returning {}".format(self))
 
     def on_close(self):
         TimeSeriesSocketHandler.waiters.remove(self)
@@ -46,7 +47,7 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
             
     def on_message(self, message):
         parsedMessage = tornado.escape.json_decode(message)
-        logging.debug('parsed message is {}'.format(parsedMessage))
+        logger.debug('parsed message is {}'.format(parsedMessage))
         #we are subscribing to a 
         if 'subscribe' in parsedMessage:
             self.subscribe(parsedMessage)
@@ -57,7 +58,7 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     Message helper functions
     '''      
     def subscribe(self,parsedMessage):
-        logging.debug('Subscribing')
+        logger.debug('Subscribing')
         if 'sensor' not in parsedMessage:
             parsedMessage['sensor'] = AssetSensor.objects.get(sensor=parsedMessage['sensor'],asset=1)#TODO: programatically get asset
             
@@ -90,7 +91,7 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
      
     @classmethod
     def send_updates(cls, newDataPoint):
-        logging.info("sending message to %d waiters", len(cls.waiters))
+        logger.info("sending message to %d waiters", len(cls.waiters))
         key = (newDataPoint.recipe_instance.pk,newDataPoint.sensor.pk)
         if key in cls.subscriptions:
             for waiter in cls.subscriptions[key]:
@@ -98,9 +99,10 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
                     serializer = TimeSeriesDataPointSerializer(newDataPoint)
                     waiter.write_message(serializer.data)
                 except:
-                    logging.error("Error sending message", exc_info=True)
+                    logger.error("Error sending message", exc_info=True)
         
 @receiver(post_save, sender=TimeSeriesDataPoint)
 def timeSeriesWatcher(sender, instance, **kwargs):
+    logger.debug("Got new datapoint {}".format(instance))
     TimeSeriesSocketHandler.update_cache(instance)
     TimeSeriesSocketHandler.send_updates(instance)
