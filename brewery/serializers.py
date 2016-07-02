@@ -9,6 +9,7 @@ from .models import TimeSeriesDataPoint
 from .models import Recipe
 from .models import Brewery
 from .models import BeerStyle
+from .models import RecipeInstance
 
 class BeerStyleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,7 +25,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     number_of_batches = serializers.SerializerMethodField()
     class Meta:
         model = Recipe
-        fields = ('name', 'style','last_brewed','number_of_batches',)
+        fields = ('id','name', 'style','last_brewed','number_of_batches',)
         
     def get_last_brewed(self, obj):
         recipe_instances = obj.recipeinstance_set
@@ -35,6 +36,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         
     def get_number_of_batches(self,obj):
         return obj.recipeinstance_set.count()
+    
+class RecipeInstanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecipeInstance
 
 class TimeSeriesDataPointSerializer(serializers.ModelSerializer):
     class Meta:
