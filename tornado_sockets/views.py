@@ -113,13 +113,16 @@ def timeSeriesWatcher(sender, instance, **kwargs):
 class RecipeInstanceHandler():
     @classmethod
     def notify(cls,brewery,recipe_instance):
-        for waiter in cls.waiters[brewery]:
-            waiter.set_result(dict(recipe_instance=recipe_instance))
+        if brewery in cls.waiters:
+            for waiter in cls.waiters[brewery]:
+                waiter.set_result(dict(recipe_instance=recipe_instance))
+        else:
+            logger.warning('Brewery not in waiters')
             
     def on_connection_close(self):
         self.waiters[self.brewery].remove(self.future)
     
-class RecipeInstanceStartHandler(tornado.web.RequestHandler):
+class RecipeInstanceStartHandler(tornado.web.RequestHandler,RecipeInstanceHandler):
     waiters = {}
     
     @gen.coroutine
@@ -140,7 +143,7 @@ class RecipeInstanceStartHandler(tornado.web.RequestHandler):
             return
         self.write(dict(messages=messages))
 
-class RecipeInstanceEndHandler(tornado.web.RequestHandler):
+class RecipeInstanceEndHandler(tornado.web.RequestHandler,RecipeInstanceHandler):
     waiters = {}
     
     @gen.coroutine
@@ -150,7 +153,7 @@ class RecipeInstanceEndHandler(tornado.web.RequestHandler):
            
         self.future = Future()
         if not self.brewery.active:
-            self.future.set_result(dict(recipe_instance=self.brewery.recipeinstance_set.get(active=True).pk))
+            self.future.set_result(dict(recipe_instance=self.brewery.recipeinstance_set.get(active=False).pk))
         else:
             if self.brewery not in RecipeInstanceEndHandler.waiters: 
                 RecipeInstanceEndHandler.waiters[self.brewery] = set()
