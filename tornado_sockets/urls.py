@@ -9,8 +9,11 @@ Created on Apr 9, 2016
 @author: William
 '''
 
-from .views import TimeSeriesSocketHandler
+from . import views
 
 urlpatterns = [
-    (r"/live/timeseries/socket/", TimeSeriesSocketHandler),
+    (r"/live/timeseries/socket/", views.TimeSeriesSocketHandler),
+    
+    (r"/live/recipeInstance/start/", views.RecipeInstanceStartHandler),
+    (r"/live/recipeInstance/end/", views.RecipeInstanceEndHandler),
 ]
