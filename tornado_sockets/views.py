@@ -149,7 +149,7 @@ class RecipeInstanceEndHandler(tornado.web.RequestHandler):
         self.brewery = Brewery.objects.get(pk=self.get_argument('brewery'))
            
         self.future = Future()
-        if self.brewery.active:
+        if not self.brewery.active:
             self.future.set_result(dict(recipe_instance=self.brewery.recipeinstance_set.get(active=True).pk))
         else:
             if self.brewery not in RecipeInstanceEndHandler.waiters: 
