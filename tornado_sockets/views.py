@@ -66,10 +66,21 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
             parsedMessage['sensor'] = AssetSensor.objects.get(sensor=parsedMessage['sensor'],asset=1)#TODO: programatically get asset
             
         key = (parsedMessage['recipe_instance'],parsedMessage['sensor'])
-        if key not in TimeSeriesSocketHandler.subscriptions: 
+        if key not in TimeSeriesSocketHandler.subscriptions:
             TimeSeriesSocketHandler.subscriptions[key] = set()
         if self not in TimeSeriesSocketHandler.subscriptions[key]: #protect against double subscriptions
             TimeSeriesSocketHandler.subscriptions[key].add(self)
+            
+        #send all the data that already exists
+        try:
+            sensor=AssetSensor.objects.get(pk=parsedMessage['sensor'])
+            recipe_instance=RecipeInstance.objects.get(pk=parsedMessage['recipe_instance'])
+            data_points = TimeSeriesDataPoint.objects.filter(sensor=sensor,recipe_instance=recipe_instance)
+            for data_point in data_points:
+                serializer = TimeSeriesDataPointSerializer(data_point)
+                self.write_message(serializer.data)
+        except:
+            logger.error("Error sending message", exc_info=True)
     
 #     def newData(self,parsedMessage):
 #         logging.debug('New data')
@@ -152,9 +163,7 @@ class RecipeInstanceEndHandler(tornado.web.RequestHandler,RecipeInstanceHandler)
         self.brewery = Brewery.objects.get(pk=self.get_argument('brewery'))
            
         self.future = Future()
-        if not self.brewery.active:
-            self.future.set_result(dict(recipe_instance=self.brewery.recipeinstance_set.get(active=False).pk))
-        else:
+        if self.brewery.active:
             if self.brewery not in RecipeInstanceEndHandler.waiters: 
                 RecipeInstanceEndHandler.waiters[self.brewery] = set()
             RecipeInstanceEndHandler.waiters[self.brewery].add(self.future)
