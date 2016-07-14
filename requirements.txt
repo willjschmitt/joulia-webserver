@@ -1,0 +1,6 @@
+tornado
+django
+djangorestframework
+django-filter
+markdown
+mysql-python
