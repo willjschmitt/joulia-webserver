@@ -14,9 +14,6 @@ ADD requirements.txt /code/
 RUN pip install -r requirements.txt
 ADD . /code/
 
-RUN python manage.py migrate --noinput
-RUN python manage.py collectstatic --noinput
-
-CMD [ "python", "./main.py" ]
+CMD ["./deploy.sh"]
 
 EXPOSE 8888
