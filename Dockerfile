@@ -1,7 +1,5 @@
-FROM continuumio/anaconda
+FROM python:2.7
 MAINTAINER William Schmitt (william@wschmitt.com)
-
-ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update
 RUN apt-get install -y build-essential
@@ -13,6 +11,7 @@ ADD . /code/
 WORKDIR /code
 RUN pip install -r requirements.txt
 
-CMD ["sh", "./deploy.sh"]
+ENTRYPOINT ["/bin/bash"]
+CMD ["./deploy.sh"]
 
 EXPOSE 8888
