@@ -38,8 +38,6 @@ class AssetSensor(models.Model):
     def __unicode__(self):
         return u"{}-{}".format(unicode(self.asset),self.name)
     
-class HeatedVessel(Asset):
-    brewery = models.ForeignKey(Brewery)
     
 class TimeSeriesDataPoint(models.Model):
     sensor = models.ForeignKey(AssetSensor)
