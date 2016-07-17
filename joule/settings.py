@@ -25,6 +25,9 @@ SECRET_KEY = 'w61u$@)p7vl=o2zp6_beqhy)h84-(--v%ytz!x(!fdp5+k3j##'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+
+SITE_NAME = "Joulia"
+
 # ALLOWED_HOSTS = []
 
 
@@ -65,6 +68,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'joule.context_processors.site_info',
             ],
         },
     },
