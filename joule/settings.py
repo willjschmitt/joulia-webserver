@@ -94,7 +94,7 @@ else:
             'ENGINE': 'django.db.backends.mysql',
             'NAME': 'joule',
             'USER': 'root',
-            'PASSWORD': 'joule',
+            'PASSWORD': '',
             'HOST': 'localhost',
             'PORT': '',
         }
