@@ -1,11 +1,18 @@
+from django.contrib.auth.models import Group
+
 from django.db import models
 
 from datetime import datetime
+
+class BrewingCompany(models.Model):
+    group = models.OneToOneField(Group,null=True)
 
 # Create your models here.
 class Brewery(models.Model):
     name = models.CharField(max_length=64)
     location = models.CharField(max_length=64)
+    
+    company = models.ForeignKey(BrewingCompany,null=True)
     
     @property
     def active(self):
