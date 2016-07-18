@@ -17,6 +17,9 @@ from brewery.models import RecipeInstance
 from brewery.models import AssetSensor
 from brewery.models import TimeSeriesDataPoint
 from brewery.serializers import TimeSeriesDataPointSerializer
+from brewery.permissions import is_member_of_brewing_company
+
+from .utils import get_current_user
 
 # from django.db.models import ForeignKey
 
@@ -62,10 +65,17 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
     '''      
     def subscribe(self,parsedMessage):
         logger.debug('Subscribing')
-        if 'sensor' not in parsedMessage:
-            parsedMessage['sensor'] = AssetSensor.objects.get(sensor=parsedMessage['sensor'],asset=1)#TODO: programatically get asset
-            
-        key = (parsedMessage['recipe_instance'],parsedMessage['sensor'])
+
+        recipe_instance_pk = parsedMessage['recipe_instance']
+        recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
+        
+        user = get_current_user(self)
+        if not is_member_of_brewing_company(user,recipe_instance.brewery):
+            logger.error("User {} attempted to access brewery "
+                         "they do not have access to ({})".format(user,recipe_instance.brewery))
+            return
+        
+        key = (recipe_instance_pk,parsedMessage['sensor'])
         if key not in TimeSeriesSocketHandler.subscriptions:
             TimeSeriesSocketHandler.subscriptions[key] = set()
         if self not in TimeSeriesSocketHandler.subscriptions[key]: #protect against double subscriptions

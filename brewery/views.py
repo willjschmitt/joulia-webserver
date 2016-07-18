@@ -1,10 +1,13 @@
 from django.core.exceptions import ObjectDoesNotExist,MultipleObjectsReturned
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse,HttpResponseNotAllowed,HttpResponseBadRequest
+from django.http import HttpResponse,HttpResponseNotAllowed,HttpResponseBadRequest,HttpResponseForbidden
 
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsMemberOfBrewingCompany,is_member_of_brewing_company
 
 from . import models
 from . import serializers
@@ -29,6 +32,7 @@ class RecipeInstanceListView(generics.ListCreateAPIView):
 class BreweryApiView():
     queryset = models.Brewery.objects.all()
     serializer_class = serializers.BrewerySerializer
+    permission_classes = (IsAuthenticated,IsMemberOfBrewingCompany)
 class BreweryListView(BreweryApiView,generics.ListCreateAPIView): pass
 class BreweryDetailView(BreweryApiView,generics.RetrieveUpdateDestroyAPIView): pass
     
@@ -50,13 +54,16 @@ class TimeSeriesIdentifyHandler(APIView):
         return Response({'sensor':sensor.pk})
   
 @login_required  
-def launch_recipe_instance(request):    
+def launch_recipe_instance(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
     data = json.loads(request.body)
     recipe = models.Recipe.objects.get(pk=data['recipe'])
     brewery = models.Brewery.objects.get(pk=data['brewery'])
+    
+    if not is_member_of_brewing_company(request,brewery):
+        return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     if models.RecipeInstance.objects.filter(brewery=brewery,
                                      active=True).count()!=0:
@@ -68,13 +75,17 @@ def launch_recipe_instance(request):
         return HttpResponse()
     
 @login_required  
-def end_recipe_instance(request):    
+def end_recipe_instance(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
     data = json.loads(request.body)
-    
     recipe_instance = models.RecipeInstance.objects.get(pk=data['recipe_instance'])
+    
+    if not is_member_of_brewing_company(request,recipe_instance.brewery):
+        return HttpResponseForbidden('Access not permitted to brewing equipment.')
+    
+    recipe_instance = recipe_instance
     recipe_instance.active = False
     recipe_instance.save()
     
