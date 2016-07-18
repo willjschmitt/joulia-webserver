@@ -1,7 +1,11 @@
 from django.contrib import admin
 
+from .models import BrewingCompany
+
 from .models import Brewery, Asset, AssetSensor
 from .models import Recipe, RecipeInstance,BeerStyle
+
+admin.site.register(BrewingCompany, admin.ModelAdmin)
 
 admin.site.register(Brewery, admin.ModelAdmin)
 admin.site.register(Asset, admin.ModelAdmin)
