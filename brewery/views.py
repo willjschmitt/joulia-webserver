@@ -62,7 +62,7 @@ def launch_recipe_instance(request):
     recipe = models.Recipe.objects.get(pk=data['recipe'])
     brewery = models.Brewery.objects.get(pk=data['brewery'])
     
-    if not is_member_of_brewing_company(request,brewery):
+    if not is_member_of_brewing_company(request.user,brewery):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     if models.RecipeInstance.objects.filter(brewery=brewery,
@@ -82,7 +82,7 @@ def end_recipe_instance(request):
     data = json.loads(request.body)
     recipe_instance = models.RecipeInstance.objects.get(pk=data['recipe_instance'])
     
-    if not is_member_of_brewing_company(request,recipe_instance.brewery):
+    if not is_member_of_brewing_company(request.user,recipe_instance.brewery):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     recipe_instance = recipe_instance
