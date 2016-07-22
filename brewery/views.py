@@ -27,12 +27,13 @@ class RecipeListView(generics.ListCreateAPIView):
 class RecipeInstanceListView(generics.ListCreateAPIView):
     queryset = models.RecipeInstance.objects.all()
     serializer_class = serializers.RecipeInstanceSerializer
-    filter_fields = ('id', 'active','brewery',)
+    filter_fields = ('id', 'active','brewhouse',)
     
 class BrewhouseApiView():
     queryset = models.Brewhouse.objects.all()
     serializer_class = serializers.BrewhouseSerializer
     permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewery)
+    filter_fields = ('id', 'brewery', )
 class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView): pass
 class BrewhouseDetailView(BrewhouseApiView,generics.RetrieveUpdateDestroyAPIView): pass
 
