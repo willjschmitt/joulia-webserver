@@ -12,7 +12,7 @@ from tornado.concurrent import Future
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from brewery.models import Brewery
+from brewery.models import Brewhouse
 from brewery.models import RecipeInstance
 from brewery.models import AssetSensor
 from brewery.models import TimeSeriesDataPoint
@@ -20,8 +20,6 @@ from brewery.serializers import TimeSeriesDataPointSerializer
 from brewery.permissions import is_member_of_brewing_company
 
 from .utils import get_current_user
-
-# from django.db.models import ForeignKey
 
 import logging
 logger = logging.getLogger(__name__)
@@ -70,9 +68,11 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
         recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
         
         user = get_current_user(self)
-        if not is_member_of_brewing_company(user,recipe_instance.brewery):
-            logger.error("User {} attempted to access brewery "
-                         "they do not have access to ({})".format(user,recipe_instance.brewery))
+        brewhouse = recipe_instance.brewhouse
+        location = brewhouse.location
+        if not is_member_of_brewing_company(user,location):
+            logger.error("User {} attempted to access brewhouse "
+                         "they do not have access to ({})".format(user,recipe_instance.brewhouse))
             return
         
         key = (recipe_instance_pk,parsedMessage['sensor'])
@@ -133,15 +133,15 @@ def timeSeriesWatcher(sender, instance, **kwargs):
  
 class RecipeInstanceHandler():
     @classmethod
-    def notify(cls,brewery,recipe_instance):
-        if brewery in cls.waiters:
-            for waiter in cls.waiters[brewery]:
+    def notify(cls,brewhouse,recipe_instance):
+        if brewhouse in cls.waiters:
+            for waiter in cls.waiters[brewhouse]:
                 waiter.set_result(dict(recipe_instance=recipe_instance))
         else:
-            logger.warning('Brewery not in waiters')
+            logger.warning('Brewhouse not in waiters')
             
     def on_connection_close(self):
-        self.waiters[self.brewery].remove(self.future)
+        self.waiters[self.brewhouse].remove(self.future)
     
 class RecipeInstanceStartHandler(tornado.web.RequestHandler,RecipeInstanceHandler):
     waiters = {}
@@ -149,15 +149,15 @@ class RecipeInstanceStartHandler(tornado.web.RequestHandler,RecipeInstanceHandle
     @gen.coroutine
     def post(self):
         logging.info("Got start watch request")
-        self.brewery = Brewery.objects.get(pk=self.get_argument('brewery'))
+        self.brewhouse = Brewhouse.objects.get(pk=self.get_argument('brewhouse'))
            
         self.future = Future()
-        if self.brewery.active:
-            self.future.set_result(dict(recipe_instance=self.brewery.recipeinstance_set.get(active=True).pk))
+        if self.brewhouse.active:
+            self.future.set_result(dict(recipe_instance=self.brewhouse.recipeinstance_set.get(active=True).pk))
         else:
-            if self.brewery not in RecipeInstanceStartHandler.waiters: 
-                RecipeInstanceStartHandler.waiters[self.brewery] = set()
-            RecipeInstanceStartHandler.waiters[self.brewery].add(self.future)
+            if self.brewhouse not in RecipeInstanceStartHandler.waiters: 
+                RecipeInstanceStartHandler.waiters[self.brewhouse] = set()
+            RecipeInstanceStartHandler.waiters[self.brewhouse].add(self.future)
 
         messages = yield self.future
         if self.request.connection.stream.closed():
@@ -170,13 +170,13 @@ class RecipeInstanceEndHandler(tornado.web.RequestHandler,RecipeInstanceHandler)
     @gen.coroutine
     def post(self):
         logging.info("Got end watch request")
-        self.brewery = Brewery.objects.get(pk=self.get_argument('brewery'))
+        self.brewhouse = Brewhouse.objects.get(pk=self.get_argument('brewhouse'))
            
         self.future = Future()
-        if self.brewery.active:
-            if self.brewery not in RecipeInstanceEndHandler.waiters: 
-                RecipeInstanceEndHandler.waiters[self.brewery] = set()
-            RecipeInstanceEndHandler.waiters[self.brewery].add(self.future)
+        if self.brewhouse.active:
+            if self.brewhouse not in RecipeInstanceEndHandler.waiters: 
+                RecipeInstanceEndHandler.waiters[self.brewhouse] = set()
+            RecipeInstanceEndHandler.waiters[self.brewhouse].add(self.future)
 
         messages = yield self.future
         if self.request.connection.stream.closed():
@@ -187,6 +187,6 @@ class RecipeInstanceEndHandler(tornado.web.RequestHandler,RecipeInstanceHandler)
 def recipe_instance_watcher(sender, instance, **kwargs):
     logger.debug("Got changed recipe instance {}".format(instance))
     if instance.active:
-        RecipeInstanceStartHandler.notify(instance.brewery,instance.pk)
+        RecipeInstanceStartHandler.notify(instance.brewhouse,instance.pk)
     else:
-        RecipeInstanceEndHandler.notify(instance.brewery,instance.pk)
+        RecipeInstanceEndHandler.notify(instance.brewhouse,instance.pk)

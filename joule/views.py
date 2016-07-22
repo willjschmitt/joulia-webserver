@@ -13,6 +13,6 @@ class IndexView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
         
-        context['brewerys'] = Brewery.objects.filter(company__group__in=self.request.user.groups.all())
+        context['locations'] = Brewery.objects.filter(company__group__in=self.request.user.groups.all())
         
         return context

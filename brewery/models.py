@@ -11,10 +11,21 @@ class BrewingCompany(models.Model):
         return u"{}".format(self.group.name)
 
 class Brewery(models.Model):
-    name = models.CharField(max_length=64)
-    location = models.CharField(max_length=64)
+    name = models.CharField(max_length=256)
+    address1 = models.CharField(max_length=256,null=True,blank=True)
+    address2 = models.CharField(max_length=256,null=True,blank=True)
+    city = models.CharField(max_length=256,null=True,blank=True)
+    state = models.CharField(max_length=256,null=True,blank=True)
+    country = models.CharField(max_length=256,null=True,blank=True)
     
     company = models.ForeignKey(BrewingCompany,null=True)
+    
+    def __unicode__(self):
+        return u"{}".format(self.name)
+
+class Brewhouse(models.Model):
+    name = models.CharField(max_length=64)
+    brewery = models.ForeignKey(Brewery,null=True)
     
     @property
     def active(self):
@@ -39,21 +50,15 @@ class Recipe(models.Model):
 class RecipeInstance(models.Model):
     recipe = models.ForeignKey(Recipe)
     date = models.DateField(default=datetime.now)
-    brewery = models.ForeignKey(Brewery,null=True)
+    brewery = models.ForeignKey(Brewhouse,null=True)
     active = models.BooleanField(default=False)
     
     def __unicode__(self):
         return u"{} - {} ({}){}".format(self.recipe.name,self.date,self.brewery.name,u"ACTIVE" if self.active else u"")
 
-class Asset(models.Model):
-    name=models.CharField(max_length=64)
-    
-    def __unicode__(self):
-        return u"{}".format(self.name)
-
 class AssetSensor(models.Model):
     name=models.CharField(max_length=64)
-    asset = models.ForeignKey(Asset)
+    brewery = models.ForeignKey(Brewhouse,null=True)
     
     def __unicode__(self):
         return u"{}-{}".format(unicode(self.asset),self.name)

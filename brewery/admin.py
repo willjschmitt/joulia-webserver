@@ -1,16 +1,13 @@
 from django.contrib import admin
 
-from .models import BrewingCompany
+from . import models
 
-from .models import Brewery, Asset, AssetSensor
-from .models import Recipe, RecipeInstance,BeerStyle
+admin.site.register(models.Brewery, admin.ModelAdmin)
+admin.site.register(models.BrewingCompany, admin.ModelAdmin)
 
-admin.site.register(BrewingCompany, admin.ModelAdmin)
+admin.site.register(models.Brewhouse, admin.ModelAdmin)
+admin.site.register(models.AssetSensor, admin.ModelAdmin)
 
-admin.site.register(Brewery, admin.ModelAdmin)
-admin.site.register(Asset, admin.ModelAdmin)
-admin.site.register(AssetSensor, admin.ModelAdmin)
-
-admin.site.register(Recipe,admin.ModelAdmin)
-admin.site.register(RecipeInstance,admin.ModelAdmin)
-admin.site.register(BeerStyle,admin.ModelAdmin)
+admin.site.register(models.Recipe,admin.ModelAdmin)
+admin.site.register(models.RecipeInstance,admin.ModelAdmin)
+admin.site.register(models.BeerStyle,admin.ModelAdmin)
