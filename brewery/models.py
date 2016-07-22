@@ -32,7 +32,7 @@ class Brewhouse(models.Model):
         return self.recipeinstance_set.filter(active=True).count() > 0
     
     def __unicode__(self):
-        return u"{} - {}".format(self.name,self.location)
+        return u"{} - {}".format(self.name,self.brewery)
 
 class BeerStyle(models.Model):
     name = models.CharField(max_length=128,unique=True)
