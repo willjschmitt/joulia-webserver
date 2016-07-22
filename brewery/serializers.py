@@ -5,26 +5,26 @@ Created on Jun 20, 2016
 '''
 from rest_framework import serializers
 
-from .models import TimeSeriesDataPoint
-from .models import Recipe
-from .models import Brewery
-from .models import BeerStyle
-from .models import RecipeInstance
+from . import models
 
 class BeerStyleSerializer(serializers.ModelSerializer):
     class Meta:
-        model = BeerStyle
+        model = models.BeerStyle
 
 class BrewerySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Brewery
+        model = models.Brewery
+        
+class BrewingFacilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.BrewingFacility
 
 class RecipeSerializer(serializers.ModelSerializer):
-    style = serializers.SlugRelatedField(slug_field="name",queryset=BeerStyle.objects.all())
+    style = serializers.SlugRelatedField(slug_field="name",queryset=models.BeerStyle.objects.all())
     last_brewed = serializers.SerializerMethodField()
     number_of_batches = serializers.SerializerMethodField()
     class Meta:
-        model = Recipe
+        model = models.Recipe
         fields = ('id','name', 'style','last_brewed','number_of_batches',)
         
     def get_last_brewed(self, obj):
@@ -39,8 +39,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     
 class RecipeInstanceSerializer(serializers.ModelSerializer):
     class Meta:
-        model = RecipeInstance
+        model = models.RecipeInstance
 
 class TimeSeriesDataPointSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TimeSeriesDataPoint
+        model = models.TimeSeriesDataPoint

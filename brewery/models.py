@@ -10,9 +10,20 @@ class BrewingCompany(models.Model):
     def __unicode__(self):
         return u"{}".format(self.group.name)
 
+class BrewingFacility(models.Model):
+    name = models.CharField(max_length=256)
+    address1 = models.CharField(max_length=256,null=True,blank=True)
+    address2 = models.CharField(max_length=256,null=True,blank=True)
+    city = models.CharField(max_length=256,null=True,blank=True)
+    state = models.CharField(max_length=256,null=True,blank=True)
+    country = models.CharField(max_length=256,null=True,blank=True)
+    
+    def __unicode__(self):
+        return u"{}".format(self.name)
+
 class Brewery(models.Model):
     name = models.CharField(max_length=64)
-    location = models.CharField(max_length=64)
+    location = models.ForeignKey(BrewingFacility,null=True)
     
     company = models.ForeignKey(BrewingCompany,null=True)
     
@@ -45,15 +56,9 @@ class RecipeInstance(models.Model):
     def __unicode__(self):
         return u"{} - {} ({}){}".format(self.recipe.name,self.date,self.brewery.name,u"ACTIVE" if self.active else u"")
 
-class Asset(models.Model):
-    name=models.CharField(max_length=64)
-    
-    def __unicode__(self):
-        return u"{}".format(self.name)
-
 class AssetSensor(models.Model):
     name=models.CharField(max_length=64)
-    asset = models.ForeignKey(Asset)
+    brewery = models.ForeignKey(Brewery,null=True)
     
     def __unicode__(self):
         return u"{}-{}".format(unicode(self.asset),self.name)

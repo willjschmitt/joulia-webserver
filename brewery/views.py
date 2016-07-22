@@ -35,6 +35,13 @@ class BreweryApiView():
     permission_classes = (IsAuthenticated,IsMemberOfBrewingCompany)
 class BreweryListView(BreweryApiView,generics.ListCreateAPIView): pass
 class BreweryDetailView(BreweryApiView,generics.RetrieveUpdateDestroyAPIView): pass
+
+class BrewingFacilityApiView():
+    queryset = models.BrewingFacility.objects.all()
+    serializer_class = serializers.BrewingFacilitySerializer
+    permission_classes = (IsAuthenticated,)#,IsMemberOfBrewingCompany)
+class BrewingFacilityListView(BrewingFacilityApiView,generics.ListCreateAPIView): pass
+class BrewingFacilityDetailView(BrewingFacilityApiView,generics.RetrieveUpdateDestroyAPIView): pass
     
 
 class TimeSeriesNewHandler(generics.CreateAPIView):
@@ -45,11 +52,11 @@ class TimeSeriesIdentifyHandler(APIView):
     def post(self,request,*args,**kwargs):
         try:#see if we can ge an existing AssetSensor
             sensor = models.AssetSensor.objects.get(name=request.data['name'],
-                                                    asset=models.Asset.objects.get(id=1))#TODO: programatically get asset
+                                                    brewery=models.Brewery.objects.get(id=1))#TODO: programatically get asset
         except ObjectDoesNotExist: #otherwise create one for recording data
             logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],1))
             sensor = models.AssetSensor(name=request.data['name'],
-                                        asset=models.Asset.objects.get(id=1))#TODO: programatically get asset
+                                        brewery=models.Brewery.objects.get(id=1))#TODO: programatically get asset
             sensor.save()
         return Response({'sensor':sensor.pk})
   
