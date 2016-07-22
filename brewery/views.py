@@ -29,12 +29,12 @@ class RecipeInstanceListView(generics.ListCreateAPIView):
     serializer_class = serializers.RecipeInstanceSerializer
     filter_fields = ('id', 'active','brewery',)
     
-class BreweryApiView():
-    queryset = models.Brewery.objects.all()
-    serializer_class = serializers.BrewerySerializer
+class BrewhouseApiView():
+    queryset = models.Brewhouse.objects.all()
+    serializer_class = serializers.BrewhouseSerializer
     permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewingFacility)
-class BreweryListView(BreweryApiView,generics.ListCreateAPIView): pass
-class BreweryDetailView(BreweryApiView,generics.RetrieveUpdateDestroyAPIView): pass
+class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView): pass
+class BrewhouseDetailView(BrewhouseApiView,generics.RetrieveUpdateDestroyAPIView): pass
 
 class BrewingFacilityApiView():
     queryset = models.BrewingFacility.objects.all()
@@ -52,11 +52,11 @@ class TimeSeriesIdentifyHandler(APIView):
     def post(self,request,*args,**kwargs):
         try:#see if we can ge an existing AssetSensor
             sensor = models.AssetSensor.objects.get(name=request.data['name'],
-                                                    brewery=models.Brewery.objects.get(id=1))#TODO: programatically get asset
+                                                    brewery=models.Brewhouse.objects.get(id=1))#TODO: programatically get asset
         except ObjectDoesNotExist: #otherwise create one for recording data
             logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],1))
             sensor = models.AssetSensor(name=request.data['name'],
-                                        brewery=models.Brewery.objects.get(id=1))#TODO: programatically get asset
+                                        brewery=models.Brewhouse.objects.get(id=1))#TODO: programatically get asset
             sensor.save()
         return Response({'sensor':sensor.pk})
   
@@ -67,18 +67,18 @@ def launch_recipe_instance(request):
 
     data = json.loads(request.body)
     recipe = models.Recipe.objects.get(pk=data['recipe'])
-    brewery = models.Brewery.objects.get(pk=data['brewery'])
-    location = brewery.location
+    brewhouse = models.Brewhouse.objects.get(pk=data['brewery'])
+    location = brewhouse.location
     
     if not permissions.is_member_of_brewing_company(request.user,location):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
-    if models.RecipeInstance.objects.filter(brewery=brewery,
+    if models.RecipeInstance.objects.filter(brewery=brewhouse,
                                      active=True).count()!=0:
         return HttpResponseBadRequest('Brewery is already active')
 
     else:
-        new_instance = models.RecipeInstance(recipe=recipe,brewery=brewery,active=True)
+        new_instance = models.RecipeInstance(recipe=recipe,brewhouse=brewhouse,active=True)
         new_instance.save()
         return HttpResponse()
     
@@ -89,8 +89,8 @@ def end_recipe_instance(request):
 
     data = json.loads(request.body)
     recipe_instance = models.RecipeInstance.objects.get(pk=data['recipe_instance'])
-    brewery = recipe_instance.brewery
-    location = brewery.location
+    brewhouse = recipe_instance.brewhouse
+    location = brewhouse.location
     
     if not permissions.is_member_of_brewing_company(request.user,location):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')

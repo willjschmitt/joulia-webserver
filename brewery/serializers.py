@@ -11,9 +11,9 @@ class BeerStyleSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.BeerStyle
 
-class BrewerySerializer(serializers.ModelSerializer):
+class BrewhouseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Brewery
+        model = models.Brewhouse
         
 class BrewingFacilitySerializer(serializers.ModelSerializer):
     class Meta:

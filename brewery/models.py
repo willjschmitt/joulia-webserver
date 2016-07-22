@@ -23,7 +23,7 @@ class BrewingFacility(models.Model):
     def __unicode__(self):
         return u"{}".format(self.name)
 
-class Brewery(models.Model):
+class Brewhouse(models.Model):
     name = models.CharField(max_length=64)
     location = models.ForeignKey(BrewingFacility,null=True)
     
@@ -50,7 +50,7 @@ class Recipe(models.Model):
 class RecipeInstance(models.Model):
     recipe = models.ForeignKey(Recipe)
     date = models.DateField(default=datetime.now)
-    brewery = models.ForeignKey(Brewery,null=True)
+    brewery = models.ForeignKey(Brewhouse,null=True)
     active = models.BooleanField(default=False)
     
     def __unicode__(self):
@@ -58,7 +58,7 @@ class RecipeInstance(models.Model):
 
 class AssetSensor(models.Model):
     name=models.CharField(max_length=64)
-    brewery = models.ForeignKey(Brewery,null=True)
+    brewery = models.ForeignKey(Brewhouse,null=True)
     
     def __unicode__(self):
         return u"{}-{}".format(unicode(self.asset),self.name)

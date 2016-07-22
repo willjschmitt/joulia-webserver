@@ -5,7 +5,7 @@ from . import models
 admin.site.register(models.BrewingFacility, admin.ModelAdmin)
 admin.site.register(models.BrewingCompany, admin.ModelAdmin)
 
-admin.site.register(models.Brewery, admin.ModelAdmin)
+admin.site.register(models.Brewhouse, admin.ModelAdmin)
 admin.site.register(models.AssetSensor, admin.ModelAdmin)
 
 admin.site.register(models.Recipe,admin.ModelAdmin)
