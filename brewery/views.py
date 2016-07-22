@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsMemberOfBrewingCompany,is_member_of_brewing_company
+from . import permissions
 
 from . import models
 from . import serializers
@@ -32,14 +32,14 @@ class RecipeInstanceListView(generics.ListCreateAPIView):
 class BreweryApiView():
     queryset = models.Brewery.objects.all()
     serializer_class = serializers.BrewerySerializer
-    permission_classes = (IsAuthenticated,IsMemberOfBrewingCompany)
+    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewingFacility)
 class BreweryListView(BreweryApiView,generics.ListCreateAPIView): pass
 class BreweryDetailView(BreweryApiView,generics.RetrieveUpdateDestroyAPIView): pass
 
 class BrewingFacilityApiView():
     queryset = models.BrewingFacility.objects.all()
     serializer_class = serializers.BrewingFacilitySerializer
-    permission_classes = (IsAuthenticated,)#,IsMemberOfBrewingCompany)
+    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewingCompany)
 class BrewingFacilityListView(BrewingFacilityApiView,generics.ListCreateAPIView): pass
 class BrewingFacilityDetailView(BrewingFacilityApiView,generics.RetrieveUpdateDestroyAPIView): pass
     
@@ -68,8 +68,9 @@ def launch_recipe_instance(request):
     data = json.loads(request.body)
     recipe = models.Recipe.objects.get(pk=data['recipe'])
     brewery = models.Brewery.objects.get(pk=data['brewery'])
+    location = brewery.location
     
-    if not is_member_of_brewing_company(request.user,brewery):
+    if not permissions.is_member_of_brewing_company(request.user,location):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     if models.RecipeInstance.objects.filter(brewery=brewery,
@@ -88,8 +89,10 @@ def end_recipe_instance(request):
 
     data = json.loads(request.body)
     recipe_instance = models.RecipeInstance.objects.get(pk=data['recipe_instance'])
+    brewery = recipe_instance.brewery
+    location = brewery.location
     
-    if not is_member_of_brewing_company(request.user,recipe_instance.brewery):
+    if not permissions.is_member_of_brewing_company(request.user,location):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     recipe_instance = recipe_instance

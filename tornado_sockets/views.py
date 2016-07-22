@@ -21,8 +21,6 @@ from brewery.permissions import is_member_of_brewing_company
 
 from .utils import get_current_user
 
-# from django.db.models import ForeignKey
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -70,7 +68,9 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
         recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
         
         user = get_current_user(self)
-        if not is_member_of_brewing_company(user,recipe_instance.brewery):
+        brewery = recipe_instance.brewery
+        location = brewery.location
+        if not is_member_of_brewing_company(user,location):
             logger.error("User {} attempted to access brewery "
                          "they do not have access to ({})".format(user,recipe_instance.brewery))
             return

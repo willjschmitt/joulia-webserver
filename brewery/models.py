@@ -18,14 +18,14 @@ class BrewingFacility(models.Model):
     state = models.CharField(max_length=256,null=True,blank=True)
     country = models.CharField(max_length=256,null=True,blank=True)
     
+    company = models.ForeignKey(BrewingCompany,null=True)
+    
     def __unicode__(self):
         return u"{}".format(self.name)
 
 class Brewery(models.Model):
     name = models.CharField(max_length=64)
     location = models.ForeignKey(BrewingFacility,null=True)
-    
-    company = models.ForeignKey(BrewingCompany,null=True)
     
     @property
     def active(self):
