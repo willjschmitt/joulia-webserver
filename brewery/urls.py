@@ -19,7 +19,7 @@ urlpatterns = [
     url(r"api/recipeInstance/$", views.RecipeInstanceListView.as_view()),
     url(r"api/brewhouse/$", views.BrewhouseListView.as_view()),
     url(r"api/brewhouse/(?P<pk>[0-9]+)/$", views.BrewhouseDetailView.as_view()),
-    url(r"api/brewingFacility/$", views.BrewingFacilityListView.as_view()),
-    url(r"api/brewingFacility/(?P<pk>[0-9]+)/$", views.BrewingFacilityDetailView.as_view()),
+    url(r"api/brewery/$", views.BreweryListView.as_view()),
+    url(r"api/brewery/(?P<pk>[0-9]+)/$", views.BreweryDetailView.as_view()),
     url(r"api/beerStyle/", views.BeerStyleListView.as_view()),
 ]

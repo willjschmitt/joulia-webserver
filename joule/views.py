@@ -6,13 +6,13 @@ Created on Jun 21, 2016
 
 from django.views.generic.base import TemplateView
 
-from brewery.models import BrewingFacility
+from brewery.models import Brewery
 
 class IndexView(TemplateView):
     template_name = "index.html"
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
         
-        context['locations'] = BrewingFacility.objects.filter(company__group__in=self.request.user.groups.all())
+        context['locations'] = Brewery.objects.filter(company__group__in=self.request.user.groups.all())
         
         return context

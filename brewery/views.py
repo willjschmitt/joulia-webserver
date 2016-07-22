@@ -32,16 +32,16 @@ class RecipeInstanceListView(generics.ListCreateAPIView):
 class BrewhouseApiView():
     queryset = models.Brewhouse.objects.all()
     serializer_class = serializers.BrewhouseSerializer
-    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewingFacility)
+    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewery)
 class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView): pass
 class BrewhouseDetailView(BrewhouseApiView,generics.RetrieveUpdateDestroyAPIView): pass
 
-class BrewingFacilityApiView():
-    queryset = models.BrewingFacility.objects.all()
-    serializer_class = serializers.BrewingFacilitySerializer
+class BreweryApiView():
+    queryset = models.Brewery.objects.all()
+    serializer_class = serializers.BrewerySerializer
     permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewingCompany)
-class BrewingFacilityListView(BrewingFacilityApiView,generics.ListCreateAPIView): pass
-class BrewingFacilityDetailView(BrewingFacilityApiView,generics.RetrieveUpdateDestroyAPIView): pass
+class BreweryListView(BreweryApiView,generics.ListCreateAPIView): pass
+class BreweryDetailView(BreweryApiView,generics.RetrieveUpdateDestroyAPIView): pass
     
 
 class TimeSeriesNewHandler(generics.CreateAPIView):

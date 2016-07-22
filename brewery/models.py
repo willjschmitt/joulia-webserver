@@ -10,7 +10,7 @@ class BrewingCompany(models.Model):
     def __unicode__(self):
         return u"{}".format(self.group.name)
 
-class BrewingFacility(models.Model):
+class Brewery(models.Model):
     name = models.CharField(max_length=256)
     address1 = models.CharField(max_length=256,null=True,blank=True)
     address2 = models.CharField(max_length=256,null=True,blank=True)
@@ -25,7 +25,7 @@ class BrewingFacility(models.Model):
 
 class Brewhouse(models.Model):
     name = models.CharField(max_length=64)
-    location = models.ForeignKey(BrewingFacility,null=True)
+    brewery = models.ForeignKey(Brewery,null=True)
     
     @property
     def active(self):

@@ -15,9 +15,9 @@ class BrewhouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Brewhouse
         
-class BrewingFacilitySerializer(serializers.ModelSerializer):
+class BrewerySerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.BrewingFacility
+        model = models.Brewery
 
 class RecipeSerializer(serializers.ModelSerializer):
     style = serializers.SlugRelatedField(slug_field="name",queryset=models.BeerStyle.objects.all())
