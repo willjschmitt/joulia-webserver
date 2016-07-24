@@ -12,11 +12,10 @@ class BeerStyleSerializer(serializers.ModelSerializer):
         model = models.BeerStyle
 
 class BrewhouseSerializer(serializers.ModelSerializer):
-    fields = ('id','brewery','active',)
-    
     active = serializers.SerializerMethodField()
     class Meta:
         model = models.Brewhouse
+        fields = ('id','brewery','active',)
         
     def get_active(self,obj):
         return obj.active
@@ -24,6 +23,7 @@ class BrewhouseSerializer(serializers.ModelSerializer):
 class BrewerySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Brewery
+        
 
 class RecipeSerializer(serializers.ModelSerializer):
     style = serializers.SlugRelatedField(slug_field="name",queryset=models.BeerStyle.objects.all())
