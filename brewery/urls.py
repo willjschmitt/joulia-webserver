@@ -12,8 +12,8 @@ urlpatterns = [
     url(r"live/timeseries/new/$", views.TimeSeriesNewHandler.as_view()),
     url(r"live/timeseries/identify/$", views.TimeSeriesIdentifyHandler.as_view()),
     
-    url(r"brewery/launch$", views.launch_recipe_instance),
-    url(r"brewery/end$", views.end_recipe_instance),
+    url(r"brewhouse/launch$", views.launch_recipe_instance),
+    url(r"brewhouse/end$", views.end_recipe_instance),
     
     url(r"api/recipe/$", views.RecipeListView.as_view()),
     url(r"api/recipeInstance/$", views.RecipeInstanceListView.as_view()),

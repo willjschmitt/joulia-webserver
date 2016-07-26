@@ -15,7 +15,6 @@ class BrewhouseSerializer(serializers.ModelSerializer):
     active = serializers.SerializerMethodField()
     class Meta:
         model = models.Brewhouse
-        fields = ('id','brewery','active',)
         
     def get_active(self,obj):
         return obj.active
