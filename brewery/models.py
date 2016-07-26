@@ -32,7 +32,7 @@ class Brewhouse(models.Model):
         return self.recipeinstance_set.filter(active=True).count() > 0
     
     def __unicode__(self):
-        return u"{} - {}".format(self.name,self.location)
+        return u"{} - {}".format(self.name,self.brewery)
 
 class BeerStyle(models.Model):
     name = models.CharField(max_length=128,unique=True)
@@ -50,18 +50,18 @@ class Recipe(models.Model):
 class RecipeInstance(models.Model):
     recipe = models.ForeignKey(Recipe)
     date = models.DateField(default=datetime.now)
-    brewery = models.ForeignKey(Brewhouse,null=True)
+    brewhouse = models.ForeignKey(Brewhouse,null=True)
     active = models.BooleanField(default=False)
     
     def __unicode__(self):
-        return u"{} - {} ({}){}".format(self.recipe.name,self.date,self.brewery.name,u"ACTIVE" if self.active else u"")
+        return u"{} - {} ({}){}".format(self.recipe.name,self.date,self.brewhouse.name,u"ACTIVE" if self.active else u"")
 
 class AssetSensor(models.Model):
     name=models.CharField(max_length=64)
     brewery = models.ForeignKey(Brewhouse,null=True)
     
     def __unicode__(self):
-        return u"{}-{}".format(unicode(self.asset),self.name)
+        return u"{}-{}".format(unicode(self.brewery),self.name)
     
     
 class TimeSeriesDataPoint(models.Model):

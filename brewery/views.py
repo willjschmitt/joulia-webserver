@@ -27,12 +27,13 @@ class RecipeListView(generics.ListCreateAPIView):
 class RecipeInstanceListView(generics.ListCreateAPIView):
     queryset = models.RecipeInstance.objects.all()
     serializer_class = serializers.RecipeInstanceSerializer
-    filter_fields = ('id', 'active','brewery',)
+    filter_fields = ('id', 'active','brewhouse',)
     
 class BrewhouseApiView():
     queryset = models.Brewhouse.objects.all()
     serializer_class = serializers.BrewhouseSerializer
     permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewery)
+    filter_fields = ('id', 'brewery', )
 class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView): pass
 class BrewhouseDetailView(BrewhouseApiView,generics.RetrieveUpdateDestroyAPIView): pass
 
@@ -51,12 +52,18 @@ class TimeSeriesNewHandler(generics.CreateAPIView):
 class TimeSeriesIdentifyHandler(APIView):
     def post(self,request,*args,**kwargs):
         try:#see if we can ge an existing AssetSensor
+            if 'recipe_instance' in request.data:
+                recipe_instance = models.RecipeInstance.objects.get(id=request.data['recipe_instance'])
+                brewhouse = recipe_instance.brewhouse
+            else:
+                brewhouse = models.Brewhouse.objects.get(id=request.data['brewhouse'])
+            
             sensor = models.AssetSensor.objects.get(name=request.data['name'],
-                                                    brewery=models.Brewhouse.objects.get(id=1))#TODO: programatically get asset
+                                                    brewery=brewhouse)
         except ObjectDoesNotExist: #otherwise create one for recording data
-            logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],1))
+            logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],brewhouse))
             sensor = models.AssetSensor(name=request.data['name'],
-                                        brewery=models.Brewhouse.objects.get(id=1))#TODO: programatically get asset
+                                        brewery=brewhouse)
             sensor.save()
         return Response({'sensor':sensor.pk})
   
@@ -67,14 +74,14 @@ def launch_recipe_instance(request):
 
     data = json.loads(request.body)
     recipe = models.Recipe.objects.get(pk=data['recipe'])
-    brewhouse = models.Brewhouse.objects.get(pk=data['brewery'])
-    location = brewhouse.location
+    brewhouse = models.Brewhouse.objects.get(pk=data['brewhouse'])
+    brewery = brewhouse.brewery
     
-    if not permissions.is_member_of_brewing_company(request.user,location):
+    if not permissions.is_member_of_brewing_company(request.user,brewery):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
-    if models.RecipeInstance.objects.filter(brewery=brewhouse,
-                                     active=True).count()!=0:
+    if models.RecipeInstance.objects.filter(brewhouse=brewhouse,
+                                            active=True).count()!=0:
         return HttpResponseBadRequest('Brewery is already active')
 
     else:
@@ -90,9 +97,9 @@ def end_recipe_instance(request):
     data = json.loads(request.body)
     recipe_instance = models.RecipeInstance.objects.get(pk=data['recipe_instance'])
     brewhouse = recipe_instance.brewhouse
-    location = brewhouse.location
+    brewery = brewhouse.brewery
     
-    if not permissions.is_member_of_brewing_company(request.user,location):
+    if not permissions.is_member_of_brewing_company(request.user,brewery):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     recipe_instance = recipe_instance
