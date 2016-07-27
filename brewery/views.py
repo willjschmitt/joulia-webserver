@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist,MultipleObjectsReturned
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse,HttpResponseNotAllowed,HttpResponseBadRequest,HttpResponseForbidden
+from django.http import JsonResponse,HttpResponseNotAllowed,HttpResponseBadRequest,HttpResponseForbidden
 
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -71,7 +71,7 @@ class TimeSeriesIdentifyHandler(APIView):
 def launch_recipe_instance(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
-
+    
     data = json.loads(request.body)
     recipe = models.Recipe.objects.get(pk=data['recipe'])
     brewhouse = models.Brewhouse.objects.get(pk=data['brewhouse'])
@@ -87,7 +87,7 @@ def launch_recipe_instance(request):
     else:
         new_instance = models.RecipeInstance(recipe=recipe,brewhouse=brewhouse,active=True)
         new_instance.save()
-        return HttpResponse()
+        return JsonResponse({'recipe_instance':new_instance.pk})
     
 @login_required  
 def end_recipe_instance(request):
@@ -102,8 +102,9 @@ def end_recipe_instance(request):
     if not permissions.is_member_of_brewing_company(request.user,brewery):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
-    recipe_instance = recipe_instance
+    if not recipe_instance.active:
+        return HttpResponseBadRequest('Recipe instance requested was not an active instance.')
     recipe_instance.active = False
     recipe_instance.save()
     
-    return HttpResponse()
+    return JsonResponse({})
