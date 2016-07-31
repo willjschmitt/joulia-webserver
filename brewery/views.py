@@ -1,10 +1,10 @@
-from django.core.exceptions import ObjectDoesNotExist,MultipleObjectsReturned
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse,HttpResponseNotAllowed,HttpResponseBadRequest,HttpResponseForbidden
+from django.http import JsonResponse,HttpResponseNotAllowed,HttpResponseBadRequest,HttpResponseForbidden
 
 from rest_framework import generics
 from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework import status
 
 from rest_framework.permissions import IsAuthenticated
 from . import permissions
@@ -60,18 +60,22 @@ class TimeSeriesIdentifyHandler(APIView):
             
             sensor = models.AssetSensor.objects.get(name=request.data['name'],
                                                     brewery=brewhouse)
+            status_code = status.HTTP_200_OK
         except ObjectDoesNotExist: #otherwise create one for recording data
             logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],brewhouse))
             sensor = models.AssetSensor(name=request.data['name'],
                                         brewery=brewhouse)
             sensor.save()
-        return Response({'sensor':sensor.pk})
+            status_code = status.HTTP_201_CREATED
+        response = JsonResponse({'sensor':sensor.pk})
+        response.status_code=status_code
+        return response
   
 @login_required  
 def launch_recipe_instance(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
-
+    
     data = json.loads(request.body)
     recipe = models.Recipe.objects.get(pk=data['recipe'])
     brewhouse = models.Brewhouse.objects.get(pk=data['brewhouse'])
@@ -87,7 +91,7 @@ def launch_recipe_instance(request):
     else:
         new_instance = models.RecipeInstance(recipe=recipe,brewhouse=brewhouse,active=True)
         new_instance.save()
-        return HttpResponse()
+        return JsonResponse({'recipe_instance':new_instance.pk})
     
 @login_required  
 def end_recipe_instance(request):
@@ -102,8 +106,9 @@ def end_recipe_instance(request):
     if not permissions.is_member_of_brewing_company(request.user,brewery):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
-    recipe_instance = recipe_instance
+    if not recipe_instance.active:
+        return HttpResponseBadRequest('Recipe instance requested was not an active instance.')
     recipe_instance.active = False
     recipe_instance.save()
     
-    return HttpResponse()
+    return JsonResponse({})
