@@ -1,10 +1,10 @@
-from django.core.exceptions import ObjectDoesNotExist,MultipleObjectsReturned
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse,HttpResponseNotAllowed,HttpResponseBadRequest,HttpResponseForbidden
 
 from rest_framework import generics
 from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework import status
 
 from rest_framework.permissions import IsAuthenticated
 from . import permissions
@@ -60,12 +60,16 @@ class TimeSeriesIdentifyHandler(APIView):
             
             sensor = models.AssetSensor.objects.get(name=request.data['name'],
                                                     brewery=brewhouse)
+            status_code = status.HTTP_200_OK
         except ObjectDoesNotExist: #otherwise create one for recording data
             logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],brewhouse))
             sensor = models.AssetSensor(name=request.data['name'],
                                         brewery=brewhouse)
             sensor.save()
-        return Response({'sensor':sensor.pk})
+            status_code = status.HTTP_201_CREATED
+        response = JsonResponse({'sensor':sensor.pk})
+        response.status_code=status_code
+        return response
   
 @login_required  
 def launch_recipe_instance(request):
