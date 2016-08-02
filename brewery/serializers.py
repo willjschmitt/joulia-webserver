@@ -7,9 +7,14 @@ from rest_framework import serializers
 
 from . import models
 
-class BeerStyleSerializer(serializers.ModelSerializer):
+class BrewingCompanySerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.BeerStyle
+        model = models.BrewingCompany
+        fields = ('group','name',)
+
+class BrewerySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Brewery
 
 class BrewhouseSerializer(serializers.ModelSerializer):
     active = serializers.SerializerMethodField()
@@ -18,12 +23,14 @@ class BrewhouseSerializer(serializers.ModelSerializer):
         
     def get_active(self,obj):
         return obj.active
-        
-class BrewerySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Brewery
-        
 
+'''
+Recipe Serializers
+'''
+class BeerStyleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.BeerStyle
+   
 class RecipeSerializer(serializers.ModelSerializer):
     style = serializers.SlugRelatedField(slug_field="name",queryset=models.BeerStyle.objects.all())
     last_brewed = serializers.SerializerMethodField()

@@ -9,6 +9,9 @@ import uuid
 class BrewingCompany(models.Model):
     group = models.OneToOneField(Group,null=True)
 
+    @property
+    def name(self): return self.group.name
+
     def __unicode__(self):
         return u"{}".format(self.group.name)
 
