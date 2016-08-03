@@ -96,7 +96,7 @@ def launch_recipe_instance(request):
     brewhouse = models.Brewhouse.objects.get(pk=data['brewhouse'])
     brewery = brewhouse.brewery
     
-    if not permissions.is_member_of_brewing_company(request.user,brewery):
+    if not permissions.is_member_of_brewing_company(request.user,brewery.company):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     if models.RecipeInstance.objects.filter(brewhouse=brewhouse,
@@ -118,7 +118,7 @@ def end_recipe_instance(request):
     brewhouse = recipe_instance.brewhouse
     brewery = brewhouse.brewery
     
-    if not permissions.is_member_of_brewing_company(request.user,brewery):
+    if not permissions.is_member_of_brewing_company(request.user,brewery.company):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     if not recipe_instance.active:
