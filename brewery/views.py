@@ -15,7 +15,35 @@ from . import serializers
 import logging
 import json
 
+'''
+brewery type views
+'''
+class BrewingCompanyApiView():
+    queryset = models.BrewingCompany.objects.all()
+    serializer_class = serializers.BrewingCompanySerializer
+    permission_classes = (IsAuthenticated,permissions.IsMember)
+class BrewingCompanyListView(BrewingCompanyApiView,generics.ListCreateAPIView): pass
+class BrewingCompanyDetailView(BrewingCompanyApiView,generics.RetrieveUpdateDestroyAPIView): pass
 
+class BreweryApiView():
+    queryset = models.Brewery.objects.all()
+    serializer_class = serializers.BrewerySerializer
+    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewingCompany)
+class BreweryListView(BreweryApiView,generics.ListCreateAPIView): pass
+class BreweryDetailView(BreweryApiView,generics.RetrieveUpdateDestroyAPIView): pass
+    
+class BrewhouseApiView():
+    queryset = models.Brewhouse.objects.all()
+    serializer_class = serializers.BrewhouseSerializer
+    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewery)
+    filter_fields = ('id', 'brewery', )
+class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView): pass
+class BrewhouseDetailView(BrewhouseApiView,generics.RetrieveUpdateDestroyAPIView): pass
+
+
+'''
+Recipe type views
+'''
 class BeerStyleListView(generics.ListCreateAPIView):
     queryset = models.BeerStyle.objects.all()
     serializer_class = serializers.BeerStyleSerializer
@@ -28,22 +56,6 @@ class RecipeInstanceListView(generics.ListCreateAPIView):
     queryset = models.RecipeInstance.objects.all()
     serializer_class = serializers.RecipeInstanceSerializer
     filter_fields = ('id', 'active','brewhouse',)
-    
-class BrewhouseApiView():
-    queryset = models.Brewhouse.objects.all()
-    serializer_class = serializers.BrewhouseSerializer
-    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewery)
-    filter_fields = ('id', 'brewery', )
-class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView): pass
-class BrewhouseDetailView(BrewhouseApiView,generics.RetrieveUpdateDestroyAPIView): pass
-
-class BreweryApiView():
-    queryset = models.Brewery.objects.all()
-    serializer_class = serializers.BrewerySerializer
-    permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewingCompany)
-class BreweryListView(BreweryApiView,generics.ListCreateAPIView): pass
-class BreweryDetailView(BreweryApiView,generics.RetrieveUpdateDestroyAPIView): pass
-    
 
 class TimeSeriesNewHandler(generics.CreateAPIView):
     queryset = models.TimeSeriesDataPoint.objects.all()
@@ -70,7 +82,10 @@ class TimeSeriesIdentifyHandler(APIView):
         response = JsonResponse({'sensor':sensor.pk})
         response.status_code=status_code
         return response
-  
+
+'''
+operational views
+'''
 @login_required  
 def launch_recipe_instance(request):
     if request.method != 'POST':

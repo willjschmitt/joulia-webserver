@@ -4,8 +4,13 @@ from django.db import models
 
 from datetime import datetime
 
+import uuid
+
 class BrewingCompany(models.Model):
     group = models.OneToOneField(Group,null=True)
+
+    @property
+    def name(self): return self.group.name
 
     def __unicode__(self):
         return u"{}".format(self.group.name)
@@ -26,6 +31,9 @@ class Brewery(models.Model):
 class Brewhouse(models.Model):
     name = models.CharField(max_length=64)
     brewery = models.ForeignKey(Brewery,null=True)
+    
+    key = models.UUIDField(default=uuid.uuid4)
+    secret = models.UUIDField(default=uuid.uuid4)
     
     @property
     def active(self):
