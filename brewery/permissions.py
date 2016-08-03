@@ -20,6 +20,6 @@ class IsMemberOfBrewery(permissions.BasePermission):
     
 def is_member_of_brewing_company(user,brewing_company):
     try:
-        return user in brewing_company.user_set.all()
+        return user in brewing_company.group.user_set.all()
     except:
         False #incase we dont have a company assigned right
