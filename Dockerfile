@@ -5,8 +5,9 @@ RUN apt-get update
 RUN apt-get install -y build-essential
 RUN apt-get install -y python-dev
 RUN apt-get install -y libmysqlclient-dev
+RUN apt-get install -y nodejs-legacy
+RUN apt-get install -y npm
 
-RUN apt-get install -y nodejs
 RUN npm install -g bower
 
 RUN mkdir /code
