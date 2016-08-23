@@ -12,6 +12,9 @@ from tornado.concurrent import Future
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from rest_framework.settings import api_settings
+from rest_framework import status
+
 from brewery.models import Brewhouse
 from brewery.models import RecipeInstance
 from brewery.models import AssetSensor
@@ -24,7 +27,48 @@ from .utils import get_current_user
 import logging
 logger = logging.getLogger(__name__)
 
-class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
+class DRFAuthenticationMixin(object):
+    '''Uses the django rest framework authentication handlers for the
+    Tornado handlers, which are all asynchronous and done through XHR
+    or other API-like operations rather than browser page requests.
+    '''
+    
+    authentication_classes = api_settings.DEFAULT_AUTHENTICATION_CLASSES
+    def get_current_user(self):
+        '''Gets the current user using the django rest framework
+        `authentication_classes`. The classes default to those
+        from the settings, but can always be overridden in child
+        classes.
+        '''
+        authenticators = (auth() for auth in self.authentication_classes)
+        for authenticator in authenticators:
+            try:
+                user_auth_tuple = authenticator.authenticate(self)
+            except:
+                pass
+
+            if user_auth_tuple is not None:
+                self._authenticator = authenticator
+                user = user_auth_tuple[0]
+                return user
+    
+    @property
+    def META(self):
+        '''Mocks a conversion of the tornado headers into django
+        headers, since tornado doesn't have really middleware that
+        manipulates the incoming headers. Particularly, this function
+        takes the "Authorization" header incoming from tornado and
+        returns a dictionary with "HTTP_AUTHORIZATION" containing the
+        same value'''
+        tornado_auth_header = self.request.headers['Authorization']
+        headers = {'HTTP_AUTHORIZATION':tornado_auth_header}
+        return headers
+    
+    @property
+    def _request(self): return self
+    
+class TimeSeriesSocketHandler(DRFAuthenticationMixin,
+                              tornado.websocket.WebSocketHandler):
     waiters = set()
     cache = []
     cache_size = 200
@@ -72,7 +116,8 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
         brewery = brewhouse.brewery
         if not is_member_of_brewing_company(user,brewery):
             logger.error("User {} attempted to access brewhouse "
-                         "they do not have access to ({})".format(user,recipe_instance.brewhouse))
+                         "they do not have access to ({})"
+                         "".format(user,recipe_instance.brewhouse))
             return
         
         key = (recipe_instance_pk,parsedMessage['sensor'])
@@ -85,7 +130,8 @@ class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
         try:
             sensor=AssetSensor.objects.get(pk=parsedMessage['sensor'])
             recipe_instance=RecipeInstance.objects.get(pk=parsedMessage['recipe_instance'])
-            data_points = TimeSeriesDataPoint.objects.filter(sensor=sensor,recipe_instance=recipe_instance)
+            data_points = TimeSeriesDataPoint.objects.filter(sensor=sensor,
+                                                             recipe_instance=recipe_instance)
             for data_point in data_points:
                 serializer = TimeSeriesDataPointSerializer(data_point)
                 self.write_message(serializer.data)
@@ -142,36 +188,102 @@ class RecipeInstanceHandler():
             
     def on_connection_close(self):
         self.waiters[self.brewhouse].remove(self.future)
+        
+    def has_permission(self,brewhouse):
+        #check permission
+        brewery = brewhouse.brewery
+        brewing_company = brewery.company
+        if not is_member_of_brewing_company(self.current_user,brewing_company):
+            self.set_status(status.HTTP_403_FORBIDDEN,
+                            'Must be member of brewing company.')
+            return False
+        
+        return True
     
-class RecipeInstanceStartHandler(tornado.web.RequestHandler,RecipeInstanceHandler):
+class RecipeInstanceStartHandler(DRFAuthenticationMixin,
+                                 tornado.web.RequestHandler,
+                                 RecipeInstanceHandler):
+    '''A long-polling request to see if a brewhouse has a recipe
+    launched. If a brewhouse is already launched, the request is
+    immediately fulfilled. If the brewhouse is not launched,
+    the request returns once the brewhouse has a recipe launched.'''
     waiters = {}
     
     @gen.coroutine
     def post(self):
-        logging.info("Got start watch request")
-        self.brewhouse = Brewhouse.objects.get(pk=self.get_argument('brewhouse'))
-           
+        '''The POST request to handle the recipe start watch.
+        
+        Args:
+            brewhouse: POST argument with the ID for the brewhouse
+                to watch for a started recipe instance
+        
+        Raises:
+            403_FORBIDDEN response: if user is not authorized to access
+                brewhouse through brewing company association
+        
+        Returns:
+            A yielded waiter attached to class object to receive update
+                when the yield is returned.
+        '''
+        logger.info("Got start watch request")
+        brewhouse_id = self.get_argument('brewhouse')
+        self.brewhouse = Brewhouse.objects.get(pk=brewhouse_id)
+        
+        #check permission
+        if not self.has_permission(self.brewhouse):
+            return
+        
         self.future = Future()
         if self.brewhouse.active:
-            self.future.set_result(dict(recipe_instance=self.brewhouse.recipeinstance_set.get(active=True).pk))
+            recipe_instance = self.brewhouse.active_recipe_instance
+            self.future.set_result({recipe_instance:recipe_instance.pk})
         else:
             if self.brewhouse not in RecipeInstanceStartHandler.waiters: 
                 RecipeInstanceStartHandler.waiters[self.brewhouse] = set()
             RecipeInstanceStartHandler.waiters[self.brewhouse].add(self.future)
-
+        
         messages = yield self.future
         if self.request.connection.stream.closed():
+            logger.debug('Lost waiter connection')
+            RecipeInstanceStartHandler.waiters[self.brewhouse].remove(self.future)
             return
         self.write(dict(messages=messages))
+        
+        return
 
-class RecipeInstanceEndHandler(tornado.web.RequestHandler,RecipeInstanceHandler):
+class RecipeInstanceEndHandler(DRFAuthenticationMixin,
+                               tornado.web.RequestHandler,
+                               RecipeInstanceHandler):
+    '''A long-polling request to wait for a recipe instance to be
+    ended for a Brewhouse. If a brewhouse does not have any active
+    recipe instance, the request is immediately fulfilled. 
+    If the brewhouse is launched, the request returns once the 
+    brewhouse is requested to end it's instance.'''
     waiters = {}
     
     @gen.coroutine
     def post(self):
-        logging.info("Got end watch request")
+        '''The POST request to handle the recipe end watch.
+        
+        Args:
+            brewhouse: POST argument with the ID for the brewhouse
+                to watch for an ended recipe instance
+        
+        Raises:
+            403_FORBIDDEN response: if user is not authorized to access
+                brewhouse through brewing company association
+        
+        Returns:
+            A yielded waiter attached to class object to receive update
+                when the yield is returned.
+        '''
+        logger.info("Got end watch request")
         self.brewhouse = Brewhouse.objects.get(pk=self.get_argument('brewhouse'))
-           
+        
+        #check permission
+        if not self.has_permission(self.brewhouse):
+            return
+        
         self.future = Future()
         if self.brewhouse.active:
             if self.brewhouse not in RecipeInstanceEndHandler.waiters: 
@@ -180,11 +292,25 @@ class RecipeInstanceEndHandler(tornado.web.RequestHandler,RecipeInstanceHandler)
 
         messages = yield self.future
         if self.request.connection.stream.closed():
+            logger.debug('Lost waiter connection')
+            RecipeInstanceEndHandler.waiters[self.brewhouse].remove(self.future)
             return
         self.write(dict(messages=messages))
         
+        return
+        
 @receiver(post_save, sender=RecipeInstance)
 def recipe_instance_watcher(sender, instance, **kwargs):
+    '''Django receiver to watch for changes made to RecipeInstances
+    and sends notifications to the waiters in the 
+    RecipeInstanceStart/EndHandler's.
+    
+    If a RecipeInstance is saved and now active, the 
+    RecipeInstanceStartHandler nofify classmethod.
+    
+    If a RecipeInstance is saved and now inactive, the 
+    RecipeInstanceEndHandler nofify classmethod.
+    '''
     logger.debug("Got changed recipe instance {}".format(instance))
     if instance.active:
         RecipeInstanceStartHandler.notify(instance.brewhouse,instance.pk)

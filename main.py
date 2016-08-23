@@ -20,6 +20,9 @@ import tornado_sockets.urls
 define("port", default=8888, help="run on the given port", type=int)
 define("debug", default=False, help="run in debug mode")
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 def main():
     settings = {
         "cookie_secret":"k+IsuNhvAjanlxg4Q5cV3fPgAw284Ev7fF7QzvYi1Yw=",

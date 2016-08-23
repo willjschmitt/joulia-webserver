@@ -12,10 +12,14 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+import socket
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
+if socket.gethostname() == "joulia.io":
+    PRODUCTION_HOST = True
+else:
+    PRODUCTION_HOST = False
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
@@ -23,13 +27,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'w61u$@)p7vl=o2zp6_beqhy)h84-(--v%ytz!x(!fdp5+k3j##'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = not PRODUCTION_HOST
 
 SITE_NAME = "Joulia"
 
-# ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'joulia.io',
+    'www.joulia.io',
+]
 
+# SECURE_SSL_REDIRECT = True
 
 # Application definition
 
@@ -40,6 +47,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework.authtoken',
     'rest_framework',
     'brewery',
 )
@@ -145,5 +153,12 @@ STATICFILES_FINDERS = (
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',)
+    'DEFAULT_FILTER_BACKENDS': (
+        'rest_framework.filters.DjangoFilterBackend',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    )
 }

@@ -62,20 +62,49 @@ class TimeSeriesNewHandler(generics.CreateAPIView):
     serializer_class = serializers.TimeSeriesDataPointSerializer
 
 class TimeSeriesIdentifyHandler(APIView):
+    '''Identifies a time series group by the name of an AssetSensor.
+    
+    Can only be handled as a POST request.
+    '''
     def post(self,request,*args,**kwargs):
-        try:#see if we can ge an existing AssetSensor
+        '''Identifies a time series group by the name of an AssetSensor.
+        
+        If the AssetSensor does not yet exist, creates it.
+        
+        Args:
+            recipe_instance: (Optional) POST argument with the 
+                recipe_instance pk. Used to retrieve the Brewhouse
+                equipment associated with the request. Used for some 
+                cases when the equipment has more readily available 
+                access to the recipe_instance rather than the Brewhouse
+                directly.
+            brewhouse: (Optional): POST argument with the Brewhouse
+                pk. Required if recipe_instance is not submitted.
+            name: Name for the AssetSensor to be used in the time
+                series data. See AssetSensor for more information on
+                naming.
+                
+        Returns: JsonResponse with the pk to the sensor as the property
+            "sensor". Response status is 200 if just returning object
+            and 201 if needed to create a new AssetSensor.
+        '''
+        try:#see if we can get an existing AssetSensor
             if 'recipe_instance' in request.data:
-                recipe_instance = models.RecipeInstance.objects.get(id=request.data['recipe_instance'])
+                recipe_instance_id = request.data['recipe_instance']
+                recipe_instance = models.RecipeInstance.objects.get(id=recipe_instance_id)
                 brewhouse = recipe_instance.brewhouse
             else:
-                brewhouse = models.Brewhouse.objects.get(id=request.data['brewhouse'])
+                brewhouse_id = request.data['brewhouse']
+                brewhouse = models.Brewhouse.objects.get(id=brewhouse_id)
             
-            sensor = models.AssetSensor.objects.get(name=request.data['name'],
+            name = request.data['name']
+            sensor = models.AssetSensor.objects.get(name=name,
                                                     brewery=brewhouse)
             status_code = status.HTTP_200_OK
         except ObjectDoesNotExist: #otherwise create one for recording data
-            logging.debug('Creating new asset sensor {} for asset {}'.format(request.data['name'],brewhouse))
-            sensor = models.AssetSensor(name=request.data['name'],
+            logging.debug('Creating new asset sensor {} for asset {}'
+                          ''.format(request.data['name'],brewhouse))
+            sensor = models.AssetSensor(name=name,
                                         brewery=brewhouse)
             sensor.save()
             status_code = status.HTTP_201_CREATED
@@ -88,6 +117,24 @@ operational views
 '''
 @login_required  
 def launch_recipe_instance(request):
+    '''Starts a RecipeInstance on a given Brewhouse.
+    
+    Must be submitted as a POST request.
+    
+    Args:
+        recipe: POST argument for the recipe to run on the Brewhouse
+        brewhouse: POST argument for the Brewhouse to launch the
+            recipe on
+            
+    Raises:
+        HttpResponseNotAllowed: if the request is not submitted as POST
+        HttpResponseForbidden: if the user is not associated with
+            the BrewingCompany that owns the Brewhouse requested
+        HttpResponseBadRequest: if the brewery is already active
+    Returns: JsonResponse if the brewhouse is successfully activated.
+            Contains the pk to the newly instantiated instance as
+            property "recipe_instance".
+    '''  
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
     
@@ -104,12 +151,31 @@ def launch_recipe_instance(request):
         return HttpResponseBadRequest('Brewery is already active')
 
     else:
-        new_instance = models.RecipeInstance(recipe=recipe,brewhouse=brewhouse,active=True)
+        new_instance = models.RecipeInstance(recipe=recipe,
+                                             brewhouse=brewhouse,
+                                             active=True)
         new_instance.save()
         return JsonResponse({'recipe_instance':new_instance.pk})
     
 @login_required  
 def end_recipe_instance(request):
+    '''Stops an already running RecipeInstance.
+    
+    Must be submitted as a POST request.
+    
+    Args:
+        recipe_instance: POST argument for the recipe_instance
+            currently running on equipment
+            
+    Raises:
+        HttpResponseNotAllowed: if the request is not submitted as POST
+        HttpResponseForbidden: if the user is not associated with
+            the BrewingCompany that owns the Brewhouse associated
+            with the recipe_instance
+        HttpResponseBadRequest: if the recipe_instance is not active
+    Returns: JsonResponse if the brewhouse is successfully deactivated.
+            Response is an empty Json object.
+    '''  
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
@@ -122,7 +188,8 @@ def end_recipe_instance(request):
         return HttpResponseForbidden('Access not permitted to brewing equipment.')
     
     if not recipe_instance.active:
-        return HttpResponseBadRequest('Recipe instance requested was not an active instance.')
+        return HttpResponseBadRequest('Recipe instance requested was'
+                                      ' not an active instance.')
     recipe_instance.active = False
     recipe_instance.save()
     
