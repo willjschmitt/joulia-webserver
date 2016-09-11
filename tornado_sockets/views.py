@@ -143,7 +143,8 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
         user = get_current_user(self)
         brewhouse = recipe_instance.brewhouse
         brewery = brewhouse.brewery
-        if not is_member_of_brewing_company(user,brewery):
+        company = brewery.company
+        if not is_member_of_brewing_company(user,company):
             logger.error("User {} attempted to access brewhouse "
                          "they do not have access to ({})"
                          "".format(user,recipe_instance.brewhouse))
