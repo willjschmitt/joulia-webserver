@@ -84,7 +84,7 @@ class Brewhouse(models.Model):
         Returns: True if there is an active instance. False if there
             are no active instances.
         '''
-        return self.recipeinstance_set.filter(active=True).count() == 0
+        return self.recipeinstance_set.filter(active=True).count() == 1
     
     @property
     def connected(self):
