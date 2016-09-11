@@ -73,6 +73,9 @@ class Brewhouse(models.Model):
     
     token = models.ForeignKey(Token,null=True)
     
+    simulated = models.BooleanField(default=False)
+    ec2_instance_id = models.CharField(max_length=32,null=True,blank=True)
+    
     @property
     def active(self):
         '''Checks if there is an active recipe instance associated with
@@ -82,6 +85,13 @@ class Brewhouse(models.Model):
             are no active instances.
         '''
         return self.recipeinstance_set.filter(active=True).count() == 0
+    
+    @property
+    def connected(self):
+        '''Checks if this Brewhouse is currently connected via
+        the websocket handler class-level mapping.'''
+        import tornado_sockets.views
+        return self in tornado_sockets.views.TimeSeriesSocketHandler.controller_controllermap
     
     @property
     def active_recipe_instance(self):

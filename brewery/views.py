@@ -14,6 +14,8 @@ from . import serializers
 
 import logging
 import json
+import subprocess
+from jinja2 import Template
 
 '''
 brewery type views
@@ -37,7 +39,19 @@ class BrewhouseApiView():
     serializer_class = serializers.BrewhouseSerializer
     permission_classes = (IsAuthenticated,permissions.IsMemberOfBrewery)
     filter_fields = ('id', 'brewery', )
-class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView): pass
+class BrewhouseListView(BrewhouseApiView,generics.ListCreateAPIView):
+    def perform_create(self, serializer):
+        '''Overridden mixin function in order to call creation of 
+        simulated brewhouse if appropriate'''
+        
+        instance = serializer.save()
+        
+        if instance.simulated:
+            instance_id = add_simulated_brewhouse(serializer)
+            instance.ec2_instance_id = instance_id
+            instance.save()
+            
+    
 class BrewhouseDetailView(BrewhouseApiView,generics.RetrieveUpdateDestroyAPIView): pass
 
 
@@ -60,6 +74,53 @@ class RecipeInstanceListView(generics.ListCreateAPIView):
 class TimeSeriesNewHandler(generics.CreateAPIView):
     queryset = models.TimeSeriesDataPoint.objects.all()
     serializer_class = serializers.TimeSeriesDataPointSerializer
+
+
+def add_simulated_brewhouse(brewhouse):
+    '''Requests AWS to initialize new ec2 instance using the shell script
+    to install Docker then start a container with the Brewhouse in it
+    
+    Args:
+        brewhouse: The `Brewhouse` object to use for binding to the new
+            AWS EC2 instance.
+            
+    Returns: Instance id for the 
+    '''
+    authtoken=brewhouse.token.key
+    startup_template = Template('"'
+                                +'#!/bin/bash\n'
+                                +'sudo yum update -y\n'
+                                +'sudo yum install -y docker\n'
+                                +'sudo service docker start\n'
+                                +'sudo usermod -a -G docker ec2-user\n'
+                                +'echo export joulia-webserver-host=joulia.io >> /etc/environment\n'
+                                +'echo export joulia-webserver-authtoken={} >> /etc/environment\n'.format(authtoken)
+                                +'docker run willjschmitt/joulia-controller\n'
+                                +'"')
+    startup_script = startup_template.render()
+    
+    # Build our aws cli command to instantiate the new instance
+    aws_args = ['ec2','run-instances']
+    ec2_kwargs = {'instance-type':'t2.nano',
+                  'image-id':'ami-6869aa05',
+                  'region':'us-east-1',
+                  'key-name':"schmitwi default",
+                  'security-groups': 'joulia-brewhouse-controllers',
+                  'user-data':startup_script}
+    
+    
+    cmd = ['aws']
+    cmd += aws_args
+    for name,value in ec2_kwargs.iteritems():
+        cmd.append("--{}={}".format(name,value))
+    
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    result_data = json.loads(proc.communicate()[0])
+    
+    instance_id = result_data['Instances'][0]['InstanceId']
+    
+    return instance_id
+    
 
 class TimeSeriesIdentifyHandler(APIView):
     '''Identifies a time series group by the name of an AssetSensor.

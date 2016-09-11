@@ -14,6 +14,7 @@ from django.dispatch import receiver
 
 from rest_framework.settings import api_settings
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 
 from brewery.models import Brewhouse
 from brewery.models import RecipeInstance
@@ -41,6 +42,7 @@ class DRFAuthenticationMixin(object):
         classes.
         '''
         authenticators = (auth() for auth in self.authentication_classes)
+        self.auth = None
         for authenticator in authenticators:
             try:
                 user_auth_tuple = authenticator.authenticate(self)
@@ -50,6 +52,7 @@ class DRFAuthenticationMixin(object):
             if user_auth_tuple is not None:
                 self._authenticator = authenticator
                 user = user_auth_tuple[0]
+                self.auth = user_auth_tuple[1]
                 return user
     
     @property
@@ -74,6 +77,11 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
     cache_size = 200
     
     subscriptions = {}
+    
+    # These class-level attributes store a map of requests to Brewhouse
+    # controllers whenever a controller establishes a websocket connection
+    controller_requestmap = {}
+    controller_controllermap = {}
 
     def get_compression_options(self):
         # Non-None enables compression with default options.
@@ -83,15 +91,36 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
     Core websocket functions
     '''
     def open(self):
+        '''Handles the opening of a new websocket connection for streaming
+        data.
+        
+        If the connection comes from authentication associating it with a
+        particular Brewhouse, make sure we store the connection in a
+        mapping between the websocket and the brewhouse'''
+        
         logger.info("New websocket connection incomming {}".format(self))
         TimeSeriesSocketHandler.waiters.add(self)
         logger.info("returning {}".format(self))
+        
+        # Store this request in a class-level map to indicate we have an
+        # established connection with a Brewhouse controller.
+        if isinstance(getattr(self,'auth',None),Token):
+            if self.auth.brewhouse:
+                self.controller_controllermap[self.auth.brewhouse] = self
+                self.controller_requestmap[self] = self.auth.brewhouse
 
     def on_close(self):
         TimeSeriesSocketHandler.waiters.remove(self)
         for subscription in TimeSeriesSocketHandler.subscriptions.itervalues():
             try: subscription.remove(self)
             except KeyError: pass
+            
+        # Remove this request from the class-level maps to indicate we have
+        # lost connection with the Brewhouse.
+        if isinstance(getattr(self,'auth',None),Token):
+            if self.auth.brewhouse:
+                del self.controller_controllermap[self.auth.brewhouse]
+                del self.controller_requestmap[self]
             
     def on_message(self, message):
         parsedMessage = tornado.escape.json_decode(message)
