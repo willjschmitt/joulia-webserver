@@ -266,7 +266,7 @@ class RecipeInstanceStartHandler(DRFAuthenticationMixin,
         self.future = Future()
         if self.brewhouse.active:
             recipe_instance = self.brewhouse.active_recipe_instance
-            self.future.set_result({recipe_instance:recipe_instance.pk})
+            self.future.set_result({"recipe_instance":recipe_instance.pk})
         else:
             if self.brewhouse not in RecipeInstanceStartHandler.waiters: 
                 RecipeInstanceStartHandler.waiters[self.brewhouse] = set()
