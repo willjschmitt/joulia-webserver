@@ -4,3 +4,4 @@ djangorestframework
 django-filter
 markdown
 mysql-python
+jinja2
