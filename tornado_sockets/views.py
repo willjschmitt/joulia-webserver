@@ -1,7 +1,5 @@
-'''
-Created on Jun 20, 2016
-
-@author: Will
+'''Handles websockets and asynchronous endpoints provided by Tornado instead
+of Django, but use the Django model framework for a database ORM.
 '''
 import datetime
 import logging
