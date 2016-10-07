@@ -1,16 +1,13 @@
-from django.test import TestCase
-
-# Create your tests here.
-from django.contrib.auth.models import Group,User
-from . import models
-from .views import launch_recipe_instance, end_recipe_instance
-
-from django.test import Client
-
 import json
 
+from django.contrib.auth.models import Group, User
+from django.test import Client
+from django.test import TestCase
 from rest_framework import status
 
+from . import models
+
+# Create your tests here.
 class BreweryTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
