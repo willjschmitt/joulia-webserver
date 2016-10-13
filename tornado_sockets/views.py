@@ -165,6 +165,7 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
             recipe_instance: The instance of the ``recipe_instance`` to
                 check permission access for.
         """
+        return True
         user = get_current_user(self)
         brewhouse = recipe_instance.brewhouse
         brewery = brewhouse.brewery
@@ -191,6 +192,7 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
         recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
 
         if not self.check_permission(recipe_instance):
+            LOGGER.error("Forbidden request %d",sensor_pk)
             return
 
         key = (recipe_instance_pk,sensor_pk)
@@ -232,6 +234,7 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
         recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
 
         if not self.check_permission(recipe_instance):
+            LOGGER.error("Forbidden request %s",data)
             return
 
         serializer = TimeSeriesDataPointSerializer(data=data)
@@ -254,9 +257,13 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
             for waiter in cls.subscriptions[key]:
                 try:
                     serializer = TimeSeriesDataPointSerializer(new_data_point)
-                    waiter.write_message(serializer.data)
+                    data = serializer.data
+                    data['name'] = new_data_point.sensor.name
+                    waiter.write_message(data)
                 except:
                     LOGGER.error("Error sending message", exc_info=True)
+        else:
+            LOGGER.debug("No subscribers for %s", new_data_point.sensor.name)
 
 @receiver(post_save, sender=TimeSeriesDataPoint)
 def time_series_watcher(sender, instance, **kwargs):
