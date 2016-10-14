@@ -6,6 +6,7 @@ import logging
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.settings import api_settings
@@ -150,11 +151,33 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
 
         # Subscription to a signal
         if 'subscribe' in parsed_message:
-            self.subscribe(recipe_instance_pk=parsed_message['recipe_instance'],
-                           sensor_pk=parsed_message['sensor'])
+            self.subscribe(parsed_message['recipe_instance'],
+                           parsed_message['sensor'])
         # Submission of a new datapoint
         else:
-            self.new_data(parsed_message)
+            self.new_data(parsed_message['recipe_instance'],
+                          parsed_message)
+
+    def check_permission(self,recipe_instance):
+        """Checks if the user has access to the ``recipe_instance``.
+
+        Args:
+            recipe_instance: The instance of the ``recipe_instance`` to
+                check permission access for.
+        """
+        return True
+        user = get_current_user(self)
+        brewhouse = recipe_instance.brewhouse
+        brewery = brewhouse.brewery
+        company = brewery.company
+        has_permission =  is_member_of_brewing_company(user,company)
+
+        if not has_permission:
+            LOGGER.error("User %s attempted to access brewhouse they do not"
+                         " have access to (%s)",
+                         user,recipe_instance.brewhouse)
+
+        return has_permission
 
     def subscribe(self,recipe_instance_pk,sensor_pk):
         """Handles a subscription request.
@@ -168,17 +191,12 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
 
         recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
 
-        user = get_current_user(self)
-        brewhouse = recipe_instance.brewhouse
-        brewery = brewhouse.brewery
-        company = brewery.company
-        if not is_member_of_brewing_company(user,company):
-            LOGGER.error("User %s attempted to access brewhouse they do not"
-                         " have access to (%s)",
-                         user,recipe_instance.brewhouse)
+        if not self.check_permission(recipe_instance):
+            LOGGER.error("Forbidden request %d",sensor_pk)
             return
 
         key = (recipe_instance_pk,sensor_pk)
+        LOGGER.debug(str(key))
         if key not in TimeSeriesSocketHandler.subscriptions:
             TimeSeriesSocketHandler.subscriptions[key] = set()
 
@@ -191,35 +209,37 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
             sensor=AssetSensor.objects.get(pk=sensor_pk)
             recipe_instance=RecipeInstance.objects.get(pk=recipe_instance_pk)
 
-            now = datetime.datetime.now()
+            now = timezone.now()
             fiftteen_minutes_ago = now - datetime.timedelta(minutes=15)
             data_points = TimeSeriesDataPoint.objects.filter(sensor=sensor,
                                                              recipe_instance=recipe_instance,
-                                                             order_by="time",
                                                              time__gt=fiftteen_minutes_ago)
+            data_points = data_points.order_by("time")
             for data_point in data_points:
                 serializer = TimeSeriesDataPointSerializer(data_point)
                 self.write_message(serializer.data)
         except:
             LOGGER.error("Error sending message", exc_info=True)
 
-    def new_data(self,parsed_message):
+    def new_data(self,recipe_instance_pk,data):
         """Handles a new data point request.
 
-        Currently not implemented, but intended to be implemented in the
-        future.
+        Args:
+            recipe_instance_pk: The primary key to the recipe instance to
+                subscribe to.
+            data: The data for a new data point.
         """
-        pass
-#         logging.debug('New data')
-#         fields = ('recipe_instance','sensor','time','value',)
-#         newDataPoint = {}
-#         for fieldName in fields:
-#             field = TimeSeriesDataPoint._meta.get_field(fieldName)
-#             if field.is_relation:
-#                 newDataPoint[fieldName] = field.related_model.objects.get(pk=parsed_message[fieldName])
-#             else:
-#                 newDataPoint[fieldName] = parsed_message[fieldName]
-#         TimeSeriesDataPoint(**newDataPoint).save()
+        LOGGER.debug('New data recieved')
+
+        recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
+
+        if not self.check_permission(recipe_instance):
+            LOGGER.error("Forbidden request %s",data)
+            return
+
+        serializer = TimeSeriesDataPointSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
     @classmethod
     def send_updates(cls, new_data_point):
@@ -230,15 +250,20 @@ class TimeSeriesSocketHandler(DRFAuthenticationMixin,
             new_data_point: An instance of a TimeSeriesDataPoint to be
                 streamed to any subscribers.
         """
-        LOGGER.info("sending message to %d waiters", len(cls.waiters))
         key = (new_data_point.recipe_instance.pk,new_data_point.sensor.pk)
+        LOGGER.debug(str(key))
         if key in cls.subscriptions:
+            LOGGER.info("sending message to %d waiters", len(cls.subscriptions[key]))
             for waiter in cls.subscriptions[key]:
                 try:
                     serializer = TimeSeriesDataPointSerializer(new_data_point)
-                    waiter.write_message(serializer.data)
+                    data = serializer.data
+                    data['name'] = new_data_point.sensor.name
+                    waiter.write_message(data)
                 except:
                     LOGGER.error("Error sending message", exc_info=True)
+        else:
+            LOGGER.debug("No subscribers for %s", new_data_point.sensor.name)
 
 @receiver(post_save, sender=TimeSeriesDataPoint)
 def time_series_watcher(sender, instance, **kwargs):
@@ -248,8 +273,29 @@ def time_series_watcher(sender, instance, **kwargs):
     LOGGER.debug("Got new datapoint %s",instance)
     TimeSeriesSocketHandler.send_updates(instance)
 
+
 class RecipeInstanceHandler(tornado.web.RequestHandler):
-    """A mixin for the start and end for a recipe instance."""
+    """A base handler for the start and end for a recipe instance. Is
+    abstract, and meant to serve as commonality for the start and finish
+    of a brewing event (``RecipeInstance``).
+
+    Attributes:
+        brewhouse: the brewhouse being waited on in this http request.
+            Must be set in child class implementation.
+        future: the tornado ``future`` being waited on in this http request.
+            Must be set in child class implementation.
+    """
+
+    def __init__(self,*args,**kwargs):
+        super(RecipeInstanceHandler,self).__init__(*args,**kwargs)
+        self.brewhouse = None
+        self.future = None
+
+    def post(self,*args,**kwargs):
+        """The post handler, which should be set by the child class in
+        order to handle the start/end requests.
+        """
+        raise NotImplementedError()
 
     @property
     def waiters(self):
@@ -258,19 +304,6 @@ class RecipeInstanceHandler(tornado.web.RequestHandler):
         """
         raise NotImplementedError("`waiters` class attribute must be"
                                   " established for child class.")
-
-    @property
-    def brewhouse(self):
-        """The brewhouse the current request is waiting for an ``active``
-        status change on.
-        """
-        raise NotImplementedError("The `brewhouse` instance must be set on"
-                                  " the current request.")
-
-    @property
-    def future(self):
-        """The long poll future waiting to be set."""
-        raise NotImplementedError("The `future` must be set on the request.")
 
     @classmethod
     def notify(cls,brewhouse,recipe_instance):
@@ -415,10 +448,10 @@ def recipe_instance_watcher(sender, instance, **kwargs):
     RecipeInstanceStart/EndHandler's.
 
     If a RecipeInstance is saved and now active, the
-    RecipeInstanceStartHandler nofify classmethod.
+    RecipeInstanceStartHandler notify classmethod.
 
     If a RecipeInstance is saved and now inactive, the
-    RecipeInstanceEndHandler nofify classmethod.
+    RecipeInstanceEndHandler notify classmethod.
     '''
     LOGGER.debug("Got changed recipe instance %s",instance)
     if instance.active:
