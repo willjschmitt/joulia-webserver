@@ -35,5 +35,5 @@ urlpatterns = [
 
     url('', include('social.apps.django_app.urls', namespace='social')),
     url(r'^login/$', social_views.auth, {'backend': 'google-oauth2'},
-        name='login')
+        name='login-google-oauth2')
 ]  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
