@@ -25,7 +25,7 @@ from django.conf.urls.static import static
 
 from django.contrib import admin
 
-import social.apps.django_app.views as social_views
+import social_django.views as social_views
 
 urlpatterns = [
     url(r'^$', login_required(IndexView.as_view())),
@@ -33,7 +33,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url('^', include('brewery.urls')),
 
-    url('', include('social.apps.django_app.urls', namespace='social')),
-    url(r'^login/$', social_views.auth, {'backend': 'google-oauth2'},
+    url('', include('social_django.urls', namespace='social')),
+    url(r'^login/google-oauth2/$', social_views.auth,
         name='login-google-oauth2')
 ]  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
