@@ -34,6 +34,7 @@ SITE_NAME = "Joulia"
 ALLOWED_HOSTS = [
     'joulia.io',
     'www.joulia.io',
+    'localhost',
 ]
 
 # Commenting in some SSL related settings we hope to enforce
@@ -51,6 +52,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social_django',
     'rest_framework.authtoken',
     'rest_framework',
     'brewery',
@@ -86,9 +88,23 @@ TEMPLATES = [
     },
 ]
 
+
+AUTHENTICATION_BACKENDS = (
+    'social.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get(
+    'SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', None)
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get(
+    'SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', None)
+
+USE_SOCIAL_AUTH_AS_ADMIN_LOGIN = True
+
 WSGI_APPLICATION = 'joule.wsgi.application'
 
 LOGIN_URL = '/login/'
+
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
