@@ -25,10 +25,15 @@ from django.conf.urls.static import static
 
 from django.contrib import admin
 
+import social_django.views as social_views
+
 urlpatterns = [
     url(r'^$', login_required(IndexView.as_view())),
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^admin/', admin.site.urls),
-#     url('^change-password/',auth_views.password_change,{'template_name': 'change-password.html'}),
-    url('^', include('brewery.urls'))
+    url('^', include('brewery.urls')),
+
+    url('', include('social_django.urls', namespace='social')),
+    url(r'^login/google-oauth2/$', social_views.auth,
+        name='login-google-oauth2')
 ]  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -98,12 +98,16 @@ ENV/
 .settings/
 .project
 .cproject
-.pydevproject
+.pydevproject
 
-# Elastic Beanstalk Files
+
+# Elastic Beanstalk Files
+
 .elasticbeanstalk/
 
 #Bower
 components/
 bower_components/
 
+# PyCharm
+.idea/
