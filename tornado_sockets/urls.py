@@ -1,19 +1,9 @@
-'''
-Created on Jun 20, 2016
+"""Urls for tornado_sockets app which handles all asynchronous end points."""
 
-@author: Will
-'''
-'''
-Created on Apr 9, 2016
-
-@author: William
-'''
-
-from . import views
+from tornado_sockets import views
 
 urlpatterns = [
     (r"/live/timeseries/socket/", views.TimeSeriesSocketHandler),
-    
     (r"/live/recipeInstance/start/", views.RecipeInstanceStartHandler),
     (r"/live/recipeInstance/end/", views.RecipeInstanceEndHandler),
 ]
