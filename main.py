@@ -4,7 +4,7 @@ Created on Apr 8, 2016
 @author: William
 '''
 import os.path
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joule.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joulia.settings")
 
 from tornado.options import options, define
 import django.core.handlers.wsgi

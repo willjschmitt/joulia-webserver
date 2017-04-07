@@ -7,6 +7,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joule.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joulia.settings")
 
 application = get_wsgi_application()

@@ -58,7 +58,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
-ROOT_URLCONF = 'joule.urls'
+ROOT_URLCONF = 'joulia.urls'
 
 TEMPLATES = [
     {
@@ -71,7 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'joule.context_processors.site_info',
+                'joulia.context_processors.site_info',
             ],
         },
     },
@@ -90,7 +90,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get(
 
 USE_SOCIAL_AUTH_AS_ADMIN_LOGIN = True
 
-WSGI_APPLICATION = 'joule.wsgi.application'
+WSGI_APPLICATION = 'joulia.wsgi.application'
 
 LOGIN_URL = '/login/'
 
@@ -113,7 +113,7 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'joule',
+            'NAME': 'joulia',
             'USER': 'root',
             'PASSWORD': '',
             'HOST': 'localhost',
