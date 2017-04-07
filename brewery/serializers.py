@@ -1,58 +1,66 @@
-'''
-Created on Jun 20, 2016
-
-@author: Will
-'''
+"""Django rest framework serializers for the brewery app.
+"""
 from rest_framework import serializers
 
-from . import models
+from brewery import models
+
 
 class BrewingCompanySerializer(serializers.ModelSerializer):
+    """Standard serializer for BrewingCompany model."""
     class Meta:
         model = models.BrewingCompany
-        fields = ('group','name',)
+        fields = ('group', 'name',)
+
 
 class BrewerySerializer(serializers.ModelSerializer):
+    """Standard serializer for Brewery."""
     class Meta:
         model = models.Brewery
 
+
 class BrewhouseSerializer(serializers.ModelSerializer):
-    active = serializers.SerializerMethodField()
+    """Standard serializer for Brewhouse."""
+    active = serializers.ReadOnlyField()
+
     class Meta:
         model = models.Brewhouse
-        
-    def get_active(self,obj):
-        return obj.active
 
-'''
-Recipe Serializers
-'''
+
 class BeerStyleSerializer(serializers.ModelSerializer):
+    """Standard serializer for BeerStyle."""
     class Meta:
         model = models.BeerStyle
-   
+
+
 class RecipeSerializer(serializers.ModelSerializer):
-    style = serializers.SlugRelatedField(slug_field="name",queryset=models.BeerStyle.objects.all())
+    """Standard serializer for Recipe."""
     last_brewed = serializers.SerializerMethodField()
     number_of_batches = serializers.SerializerMethodField()
+
     class Meta:
         model = models.Recipe
-        fields = ('id','name', 'style','last_brewed','number_of_batches',)
-        
-    def get_last_brewed(self, obj):
-        recipe_instances = obj.recipeinstance_set
-        if recipe_instances.count()!=0:
+        fields = ('id', 'name', 'style', 'last_brewed', 'number_of_batches',)
+
+    @staticmethod
+    def get_last_brewed(recipe):
+        recipe_instances = recipe.recipeinstance_set
+        if recipe_instances.count() != 0:
             return recipe_instances.latest('date').date
         else:
             return None
-        
-    def get_number_of_batches(self,obj):
-        return obj.recipeinstance_set.count()
-    
+
+    @staticmethod
+    def get_number_of_batches(recipe):
+        return recipe.recipeinstance_set.count()
+
+
 class RecipeInstanceSerializer(serializers.ModelSerializer):
+    """Standard serializer for RecipeInstance."""
     class Meta:
         model = models.RecipeInstance
 
+
 class TimeSeriesDataPointSerializer(serializers.ModelSerializer):
+    """Standard serializer for TimeSeriesDataPoint."""
     class Meta:
         model = models.TimeSeriesDataPoint

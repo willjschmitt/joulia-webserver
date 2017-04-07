@@ -1,22 +1,20 @@
-'''
-Created on Apr 9, 2016
-
-@author: William
-'''
+"""URLS for the brewery app."""
 
 from django.conf.urls import url
 
-from . import views
+from brewery import views
 
 urlpatterns = [
     url(r"live/timeseries/new/$", views.TimeSeriesNewHandler.as_view()),
-    url(r"live/timeseries/identify/$", views.TimeSeriesIdentifyHandler.as_view()),
+    url(r"live/timeseries/identify/$",
+        views.TimeSeriesIdentifyHandler.as_view()),
     
     url(r"brewhouse/launch$", views.launch_recipe_instance),
     url(r"brewhouse/end$", views.end_recipe_instance),
     
     url(r"api/brewingCompany/$", views.BrewingCompanyListView.as_view()),
-    url(r"api/brewingCompany/(?P<pk>[0-9]+)/$", views.BrewingCompanyDetailView.as_view()),
+    url(r"api/brewingCompany/(?P<pk>[0-9]+)/$",
+        views.BrewingCompanyDetailView.as_view()),
     url(r"api/brewery/$", views.BreweryListView.as_view()),
     url(r"api/brewery/(?P<pk>[0-9]+)/$", views.BreweryDetailView.as_view()),
     url(r"api/brewhouse/$", views.BrewhouseListView.as_view()),
