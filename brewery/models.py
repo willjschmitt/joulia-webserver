@@ -7,8 +7,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from rest_framework.authtoken.models import Token
 
-import tornado_sockets.views
-
 
 class BrewingCompany(models.Model):
     """An organizational group as a Brewing Company.
@@ -75,17 +73,6 @@ class Brewhouse(models.Model):
             active instances.
         """
         return self.recipeinstance_set.filter(active=True).count() == 1
-
-    @property
-    def connected(self):
-        """Checks if this Brewhouse is currently connected via the websocket
-        handler class-level mapping.
-        """
-        # TODO(willjschmitt): Rethink how this is handled. Maybe move connection
-        # status into a model attribute.
-        connector = tornado_sockets.views.TimeSeriesSocketHandler
-        connected_controllers = connector.controller_controllermap
-        return self in connected_controllers
 
     @property
     def active_recipe_instance(self):
