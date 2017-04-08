@@ -1,9 +1,11 @@
 """Urls for tornado_sockets app which handles all asynchronous end points."""
-
-from tornado_sockets import views
+import tornado_sockets.views.recipe_instance
+from tornado_sockets.views import timeseries
 
 urlpatterns = [
-    (r"/live/timeseries/socket/", views.TimeSeriesSocketHandler),
-    (r"/live/recipeInstance/start/", views.RecipeInstanceStartHandler),
-    (r"/live/recipeInstance/end/", views.RecipeInstanceEndHandler),
+    (r"/live/timeseries/socket/", timeseries.TimeSeriesSocketHandler),
+    (r"/live/recipeInstance/start/",
+     tornado_sockets.views.recipe_instance.RecipeInstanceStartHandler),
+    (r"/live/recipeInstance/end/",
+     tornado_sockets.views.recipe_instance.RecipeInstanceEndHandler),
 ]
