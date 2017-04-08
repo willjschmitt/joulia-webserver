@@ -1,8 +1,5 @@
-'''
-Created on Apr 8, 2016
-
-@author: William
-'''
+"""Main entry point for running the webserver.
+"""
 import os.path
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joulia.settings")
 
@@ -23,19 +20,18 @@ define("debug", default=False, help="run in debug mode")
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+
 def main():
     settings = {
-        "cookie_secret":"k+IsuNhvAjanlxg4Q5cV3fPgAw284Ev7fF7QzvYi1Yw=",
-        "template_path":os.path.join(os.path.dirname(__file__), "templates"),
-#         "static_path":os.path.join(os.path.dirname(__file__), "static"),
-        #"xsrf_cookies":True,
-        "debug":options.debug,
+        # TODO(willjschmitt): This should be an environment variable in prod.
+        "cookie_secret": "k+IsuNhvAjanlxg4Q5cV3fPgAw284Ev7fF7QzvYi1Yw=",
+        "debug": options.debug,
     }
     
     wsgi_app = tornado.wsgi.WSGIContainer(django.core.handlers.wsgi.WSGIHandler())
     tornado_app = tornado.web.Application(
         tornado_sockets.urls.urlpatterns
-        +[('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),],
+        + [('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app))],
         **settings
         )
     
