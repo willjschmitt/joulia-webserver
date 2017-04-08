@@ -111,3 +111,7 @@ bower_components/
 
 # PyCharm
 .idea/
+
+# Local database file
+db.sqlite
+
