@@ -14,6 +14,7 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from tornado.escape import json_decode
 
 from brewery import models
 from brewery import permissions
@@ -183,7 +184,7 @@ def launch_recipe_instance(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
-    data = json.loads(request.body)
+    data = json_decode(request.body)
     recipe = models.Recipe.objects.get(pk=data['recipe'])
     brewhouse = models.Brewhouse.objects.get(pk=data['brewhouse'])
     brewery = brewhouse.brewery
@@ -228,7 +229,7 @@ def end_recipe_instance(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
-    data = json.loads(request.body)
+    data = json_decode(request.body)
     recipe_instance = models.RecipeInstance.objects.get(
         pk=data['recipe_instance'])
     brewhouse = recipe_instance.brewhouse
