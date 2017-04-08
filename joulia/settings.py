@@ -109,6 +109,13 @@ if 'RDS_HOSTNAME' in os.environ:
             'PORT': os.environ['RDS_PORT'],
         }
     }
+elif not PRODUCTION_HOST:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite'),
+        }
+    }
 else:
     DATABASES = {
         'default': {
