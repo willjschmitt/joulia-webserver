@@ -21,10 +21,10 @@ class BrewingCompany(models.Model):
     @property
     def name(self):
         """Simple alias to the associated group name."""
-        return self.group.name
+        return self.group.name if self.group else None
 
-    def __unicode__(self):
-        return u"{}".format(self.group.name)
+    def __str__(self):
+        return "{}".format(self.group.name)
 
 
 class Brewery(models.Model):
@@ -38,8 +38,8 @@ class Brewery(models.Model):
     name = models.CharField(max_length=256)
     company = models.ForeignKey(BrewingCompany, null=True)
 
-    def __unicode__(self):
-        return u"{}".format(self.name)
+    def __str__(self):
+        return "{}".format(self.name)
 
 
 class Brewhouse(models.Model):
@@ -86,8 +86,8 @@ class Brewhouse(models.Model):
         except ObjectDoesNotExist:
             return None
 
-    def __unicode__(self):
-        return u"{} - {}".format(self.name, self.brewery)
+    def __str__(self):
+        return "{} - {}".format(self.name, self.brewery)
 
 
 class BeerStyle(models.Model):
@@ -98,8 +98,8 @@ class BeerStyle(models.Model):
     """
     name = models.CharField(max_length=128, unique=True)
 
-    def __unicode__(self):
-        return u"{}".format(self.name)
+    def __str__(self):
+        return "{}".format(self.name)
 
 
 class Recipe(models.Model):
@@ -112,8 +112,8 @@ class Recipe(models.Model):
     name = models.CharField(max_length=64)
     style = models.ForeignKey(BeerStyle, null=True)
 
-    def __unicode__(self):
-        return u"{}({})".format(self.name, self.style.name)
+    def __str__(self):
+        return "{}({})".format(self.name, self.style)
 
 
 class RecipeInstance(models.Model):
@@ -130,10 +130,23 @@ class RecipeInstance(models.Model):
     brewhouse = models.ForeignKey(Brewhouse, null=True)
     active = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return u"{} - {} ({}){}".format(
-            self.recipe.name, self.date, self.brewhouse.name,
-            u"ACTIVE" if self.active else u"")
+    def save(self, *args, **kwargs):
+        # Make sure we don't initialize a recipe instance on an already active
+        # brewhouse.
+        active = RecipeInstance.objects.filter(
+            brewhouse=self.brewhouse, active=True)
+        already_active = active.count()
+        if self.active and not self.pk and already_active > 0:
+            raise RuntimeError("Cannot instantiate recipe instance while one is"
+                               " already active on brewhouse.")
+
+        super(RecipeInstance, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "{} - {} ({}) {}".format(
+            self.recipe.name, self.date,
+            self.brewhouse.name if self.brewhouse else None,
+            "ACTIVE" if self.active else "INACTIVE")
 
 
 class AssetSensor(models.Model):
@@ -146,10 +159,10 @@ class AssetSensor(models.Model):
         brewery: The brewhouse the sensor is associated with.
     """
     name = models.CharField(max_length=64)
-    brewery = models.ForeignKey(Brewhouse, null=True)
+    brewhouse = models.ForeignKey(Brewhouse, null=True)
 
-    def __unicode__(self):
-        return u"{}-{}".format(self.brewery, self.name)
+    def __str__(self):
+        return "{}-{}".format(self.brewhouse.name, self.name)
 
 
 class TimeSeriesDataPoint(models.Model):
@@ -171,5 +184,5 @@ class TimeSeriesDataPoint(models.Model):
     value = models.FloatField()
 
     def __str__(self):
-        return "{} ({}) - {} @ {}".format(
-            self.sensor, self.recipe_instance, self.value, self.time)
+        return "{} - {} @ {}".format(
+            self.sensor.name, self.value, self.time)

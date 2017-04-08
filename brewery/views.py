@@ -147,13 +147,13 @@ class TimeSeriesIdentifyHandler(APIView):
         # See if we can get an existing AssetSensor.
         try:
             sensor = models.AssetSensor.objects.get(name=name,
-                                                    brewery=brewhouse)
+                                                    brewhouse=brewhouse)
             status_code = status.HTTP_200_OK
         # Otherwise create one for recording data
         except ObjectDoesNotExist:
             LOGGER.debug('Creating new asset sensor %s for asset %s',
                          name, brewhouse)
-            sensor = models.AssetSensor(name=name, brewery=brewhouse)
+            sensor = models.AssetSensor(name=name, brewhouse=brewhouse)
             sensor.save()
             status_code = status.HTTP_201_CREATED
 

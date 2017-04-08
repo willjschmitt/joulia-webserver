@@ -46,7 +46,7 @@ class TimeSeriesIdentifyHandlerTest(BreweryTestBase):
         self.login_as_normal_user()
 
         sensor = models.AssetSensor.objects.create(
-            name="existing_sensor", brewery=self.brewhouse)
+            name="existing_sensor", brewhouse=self.brewhouse)
         recipe_instance = models.RecipeInstance.objects.create(
             recipe=self.recipe, brewhouse=self.brewhouse, active=True)
 
