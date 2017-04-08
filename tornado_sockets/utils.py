@@ -2,27 +2,27 @@
 """
 
 from django.conf import settings
-import django.contrib.auth
+from django.contrib.auth import get_user
 from importlib import import_module
 
 
-def get_current_user(info):
+class _FakeAuthenticatedRequest(object):
+    """Mocks a django request with the session set by a tornado view cookie."""
+    def __init__(self, view):
+        print(settings.SESSION_ENGINE)
+        engine = import_module(settings.SESSION_ENGINE)
+        session_key = str(view.get_cookie(settings.SESSION_COOKIE_NAME))
+        self.session = engine.SessionStore(session_key)
+
+
+def get_current_user(view):
     """Gets the currently logged user from django into tornado views.
 
     Args:
-        info: Likely a tornado view, which can provide a cookie via get_cookie
-            method.
+        view: A tornado view, which can provide a cookie via get_cookie method.
 
     Returns:
         User making request.
     """
-    engine = import_module(settings.SESSION_ENGINE)
-    session_key = str(info.get_cookie(settings.SESSION_COOKIE_NAME))
-
-    class Dummy(object):
-        pass
-
-    django_request = Dummy()
-    django_request.session = engine.SessionStore(session_key)
-    user = django.contrib.auth.get_user(django_request)
-    return user
+    django_request = _FakeAuthenticatedRequest(view)
+    return get_user(django_request)
