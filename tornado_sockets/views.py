@@ -24,9 +24,6 @@ from brewery.models import TimeSeriesDataPoint
 from brewery.permissions import is_member_of_brewing_company
 from brewery.serializers import TimeSeriesDataPointSerializer
 
-from tornado_sockets.utils import get_current_user
-
-
 LOGGER = logging.getLogger(__name__)
 
 
