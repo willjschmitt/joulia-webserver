@@ -17,8 +17,8 @@ install:
 before_script:
   - mysql -e 'create database joule'
 script: 
-- python manage.py test
-- coverage run --source='.' manage.py test
+- python manage.py test --pattern="*test*.py"
+- coverage run --source='.' manage.py test --pattern="*test*.py"
 after_success: coveralls
 notifications:
   email: false
