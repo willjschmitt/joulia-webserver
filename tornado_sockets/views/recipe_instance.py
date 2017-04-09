@@ -2,7 +2,8 @@
 RecipeInstance's.
 """
 
-import tornado.web
+import logging
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework import status
@@ -11,11 +12,12 @@ from tornado.concurrent import Future
 
 from brewery.models import Brewhouse, RecipeInstance
 from brewery.permissions import is_member_of_brewing_company
-from tornado_sockets.views.timeseries import LOGGER
-from tornado_sockets.views.django import DRFAuthenticationMixin
+from tornado_sockets.views.django import DjangoAuthenticatedRequestHandler
+
+LOGGER = logging.getLogger(__name__)
 
 
-class RecipeInstanceHandler(tornado.web.RequestHandler):
+class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
     """A base handler for the start and end for a recipe instance. Is abstract,
     and meant to serve as commonality for the start and finish of a brewing
     event (``RecipeInstance``).
@@ -25,7 +27,12 @@ class RecipeInstanceHandler(tornado.web.RequestHandler):
             set in child class implementation.
         future: the tornado ``future`` being waited on in this http request.
             Must be set in child class implementation.
+        waiters: A dictionary to map a brewhouse to a long polled request
+            waiting for a change in the active status of a brewhouse.
     """
+    # Subclasses should create their own of this, since the mutability will be
+    # otherwise shared between all classes.
+    waiters = {}
 
     def __init__(self, *args, **kwargs):
         super(RecipeInstanceHandler, self).__init__(*args, **kwargs)
@@ -37,14 +44,6 @@ class RecipeInstanceHandler(tornado.web.RequestHandler):
         order to handle the start/end requests.
         """
         raise NotImplementedError()
-
-    @property
-    def waiters(self):
-        """A dictionary to map a brewhouse to a long polled request
-        waiting for a change in the active status of a brewhouse.
-        """
-        raise NotImplementedError(
-            "`waiters` class attribute must be established for child class.")
 
     @classmethod
     def notify(cls, brewhouse, recipe_instance):
@@ -70,20 +69,25 @@ class RecipeInstanceHandler(tornado.web.RequestHandler):
         ``brewhouse``.
 
         Args:
-            brewhouse: The ``Brewhouse`` instance to check permissions
-                against
+            brewhouse: The ``Brewhouse`` instance to check permissions against.
         """
-        brewery = brewhouse.brewery
-        brewing_company = brewery.company
-        if not is_member_of_brewing_company(self.current_user, brewing_company):
+        try:
+            brewing_company = brewhouse.brewery.company
+        # In case brewery or company is not assigned to brewhouse.
+        except AttributeError:
+            permission = False
+        else:
+            permission = is_member_of_brewing_company(
+                self.current_user, brewing_company)
+
+        if not permission:
             self.set_status(status.HTTP_403_FORBIDDEN,
                             'Must be member of brewing company.')
-            return False
 
-        return True
+        return permission
 
 
-class RecipeInstanceStartHandler(DRFAuthenticationMixin, RecipeInstanceHandler):
+class RecipeInstanceStartHandler(RecipeInstanceHandler):
     """A long-polling request to see if a brewhouse has a recipe launched. If a
     brewhouse is already launched, the request is immediately fulfilled. If the
     brewhouse is not launched, the request returns once the brewhouse has a
@@ -134,7 +138,7 @@ class RecipeInstanceStartHandler(DRFAuthenticationMixin, RecipeInstanceHandler):
         return
 
 
-class RecipeInstanceEndHandler(DRFAuthenticationMixin, RecipeInstanceHandler):
+class RecipeInstanceEndHandler(RecipeInstanceHandler):
     """A long-polling request to wait for a recipe instance to be ended for a
     Brewhouse. If a brewhouse does not have any active recipe instance, the
     request is immediately fulfilled. If the brewhouse is launched, the request
