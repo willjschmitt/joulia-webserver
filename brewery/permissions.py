@@ -35,4 +35,7 @@ def is_member_of_brewing_company(user, brewing_company):
         brewing_company: The BrewingCompany to check membership in its
             associated group.
     """
+    if brewing_company.group is None:
+        return False
+
     return user in brewing_company.group.user_set.all()
