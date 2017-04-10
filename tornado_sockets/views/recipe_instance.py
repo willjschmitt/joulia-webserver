@@ -40,9 +40,40 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
         self.brewhouse = None
         self.future = None
 
-    def post(self, *args, **kwargs):
-        """The post handler, which should be set by the child class in order to
-        handle the start/end requests.
+    @gen.coroutine
+    def post(self):
+        """The POST request to handle the recipe end watch.
+
+        Args:
+            brewhouse: POST argument with the ID for the brewhouse to watch for
+                an ended recipe instance.
+
+        Raises:
+            403_FORBIDDEN response: if user is not authorized to access
+                brewhouse through brewing company association.
+            404_NOT_FOUND response: if the requested brewhouse does not exist.
+
+        Returns:
+            A yielded waiter attached to class object to receive update when the
+            yield is returned.
+        """
+        ok_to_proceed = self.get_and_check_permission()
+        if not ok_to_proceed:
+            return
+
+        self.future = Future()
+        self.handle_request()
+        result = yield self.future
+
+        if self.request.connection.stream.closed():
+            self._handle_lost_connection()
+            return
+
+        self.write(result)
+
+    def handle_request(self):
+        """Handles the particulars for start/stopping an instance. Should be
+        implemented by child class.
         """
         raise NotImplementedError()
 
@@ -105,7 +136,7 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
         """Registers the currently set future as a waiter for the brewhouse."""
         if self.brewhouse not in self.waiters:
             # TODO(willjschmitt): Consider making set into weakref set so the
-            # futures in it can disappear from the class variable incase the
+            # futures in it can disappear from the class variable in case the
             # instance goes away.
             self.waiters[self.brewhouse] = set()
         self.waiters[self.brewhouse].add(self.future)
@@ -113,9 +144,22 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
     def _handle_lost_connection(self):
         """Removes current future for brewhouse."""
         LOGGER.debug('Lost waiter connection')
-        waiter = self.waiters[self.brewhouse]
-        waiter.remove(self.future)
-        return
+        if self.brewhouse in self.waiters:
+            waiter = self.waiters[self.brewhouse]
+            waiter.remove(self.future)
+
+    def get_and_check_permission(self):
+        """Gets the brewhouse and checks permission. If any step fails, returns
+        False, otherwise returns True.
+        """
+        brewhouse_found = self.get_brewhouse()
+        if not brewhouse_found:
+            return False
+
+        if not self.has_permission(self.brewhouse):
+            return False
+
+        return True
 
 
 class RecipeInstanceStartHandler(RecipeInstanceHandler):
@@ -127,45 +171,13 @@ class RecipeInstanceStartHandler(RecipeInstanceHandler):
     """
     waiters = {}
 
-    @gen.coroutine
-    def post(self):
-        """The POST request to handle the recipe start watch.
-
-        Args:
-            brewhouse: POST argument with the ID for the brewhouse to watch for
-                a started recipe instance.
-
-        Raises:
-            403_FORBIDDEN response: if user is not authorized to access
-                brewhouse through brewing company association.
-            404_NOT_FOUND response: if the requested brewhouse does not exist.
-
-        Returns:
-            A yielded waiter attached to class object to receive update when the
-            yield is returned.
-        """
+    def handle_request(self):
         LOGGER.info("Got start watch request.")
-        brewhouse_found = self.get_brewhouse()
-        if not brewhouse_found:
-            return
-
-        if not self.has_permission(self.brewhouse):
-            return
-
-        self.future = Future()
         if self.brewhouse.active:
             recipe_instance = self.brewhouse.active_recipe_instance
             self.future.set_result({"recipe_instance": recipe_instance.pk})
         else:
             self.register_waiter()
-
-        messages = yield self.future
-
-        if self.request.connection.stream.closed():
-            self._handle_lost_connection()
-            return
-
-        self.write(dict(messages=messages))
 
 
 class RecipeInstanceEndHandler(RecipeInstanceHandler):
@@ -179,44 +191,12 @@ class RecipeInstanceEndHandler(RecipeInstanceHandler):
     """
     waiters = {}
 
-    @gen.coroutine
-    def post(self):
-        """The POST request to handle the recipe end watch.
-
-        Args:
-            brewhouse: POST argument with the ID for the brewhouse to watch for
-                an ended recipe instance.
-
-        Raises:
-            403_FORBIDDEN response: if user is not authorized to access
-                brewhouse through brewing company association.
-            404_NOT_FOUND response: if the requested brewhouse does not exist.
-
-        Returns:
-            A yielded waiter attached to class object to receive update when the
-            yield is returned.
-        """
+    def handle_request(self):
         LOGGER.info("Got end watch request.")
-        brewhouse_found = self.get_brewhouse()
-        if not brewhouse_found:
-            return
-
-        if not self.has_permission(self.brewhouse):
-            return
-
-        self.future = Future()
         if not self.brewhouse.active:
             self.future.set_result({"recipe_instance": None})
         else:
             self.register_waiter()
-
-        messages = yield self.future
-
-        if self.request.connection.stream.closed():
-            self._handle_lost_connection()
-            return
-
-        self.write(dict(messages=messages))
 
 
 @receiver(post_save, sender=RecipeInstance)

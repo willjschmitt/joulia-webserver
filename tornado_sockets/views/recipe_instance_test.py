@@ -5,8 +5,9 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from rest_framework import status
 from tornado.concurrent import Future
+from tornado.ioloop import IOLoop
+from unittest.mock import MagicMock
 from unittest.mock import Mock
-
 
 from brewery.models import Brewery
 from brewery.models import Brewhouse
@@ -22,17 +23,79 @@ class TestRecipeInstanceHandler(JouliaTestCase):
     """Tests for the RecipeInstanceHandler class."""
 
     def setUp(self):
-        app = Mock()
-        app.ui_methods = {}
-        request = Mock()
+        self.app = Mock()
+        self.app.ui_methods = {}
+        self.request = Mock()
         cookie = Mock(value="abcdefg")
-        request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
-        request.arguments = {}
-        self.handler = recipe_instance.RecipeInstanceHandler(app, request)
+        self.request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
+        self.request.arguments = {}
+        self.handler = recipe_instance.RecipeInstanceHandler(self.app,
+                                                             self.request)
 
-    def test_post(self):
+    @test_with_fake_session_backend
+    def test_post_success(self):
+        class RecipeInstanceHandlerImplementer(
+                recipe_instance.RecipeInstanceHandler):
+            waiters = {}
+            def handle_request(self):
+                self.future.set_result({"fake": "result"})
+
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+
+        handler = RecipeInstanceHandlerImplementer(self.app, self.request)
+        handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        handler.request.connection.stream.closed = MagicMock(return_value=False)
+        IOLoop.current().run_sync(handler.post)
+        self.assertIn(b'{"fake": "result"}', handler._write_buffer)
+
+    @test_with_fake_session_backend
+    def test_post_poller_disconnects(self):
+        class RecipeInstanceHandlerImplementer(
+            recipe_instance.RecipeInstanceHandler):
+            waiters = {}
+
+            def handle_request(self):
+                self.future.set_result({"fake": "result"})
+
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+
+        handler = RecipeInstanceHandlerImplementer(self.app, self.request)
+        handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        handler.request.connection.stream.closed = MagicMock(return_value=True)
+        IOLoop.current().run_sync(handler.post)
+        self.assertEquals(handler._write_buffer, [])
+
+    def test_post_no_auth_not_ok_to_proceed(self):
+        class RecipeInstanceHandlerImplementer(
+            recipe_instance.RecipeInstanceHandler):
+            waiters = {}
+
+            def handle_request(self):
+                self.future.set_result({"fake": "result"})
+
+        brewhouse = Brewhouse.objects.create(name="Bar")
+
+        handler = RecipeInstanceHandlerImplementer(self.app, self.request)
+        handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        handler.request.connection.stream.closed = MagicMock(return_value=False)
+        IOLoop.current().run_sync(handler.post)
+        self.assertEquals(handler._write_buffer, [])
+
+    def test_handle_request(self):
         with self.assertRaises(NotImplementedError):
-            self.handler.post()
+            self.handler.handle_request()
 
     def test_notify_not_in_waiters(self):
         brewhouse = Brewhouse.objects.create(name="Foo")
@@ -125,7 +188,46 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         self.handler.register_waiter()
         self.assertEquals(self.handler.waiters[brewhouse], {future})
 
+    @test_with_fake_session_backend
+    def test_get_and_check_permission(self):
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.assertTrue(self.handler.get_and_check_permission())
+
+    @test_with_fake_session_backend
+    def test_get_and_check_permission_no_brewhouse(self):
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk + 1)
+        self.assertFalse(self.handler.get_and_check_permission())
+        self.assertEquals(self.handler._status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_and_check_permission_not_logged_in(self):
+        brewhouse = Brewhouse.objects.create(name="Bar")
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.assertFalse(self.handler.get_and_check_permission())
+        self.assertEquals(self.handler._status_code, status.HTTP_403_FORBIDDEN)
+
 
 class TestRecipeInstanceStartHandler(JouliaTestCase):
-    pass
-    #IOLoop.current().run_sync(lambda: self._connect(address))
+    """Tests for the RecipeInstanceStartHandler."""
+
+    def setUp(self):
+        app = Mock()
+        app.ui_methods = {}
+        request = Mock()
+        cookie = Mock(value="abcdefg")
+        request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
+        request.arguments = {}
+        self.handler = recipe_instance.RecipeInstanceStartHandler(app, request)
