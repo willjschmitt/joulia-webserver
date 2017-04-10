@@ -3,8 +3,10 @@
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
+from rest_framework import status
 from tornado.concurrent import Future
 from unittest.mock import Mock
+
 
 from brewery.models import Brewery
 from brewery.models import Brewhouse
@@ -25,6 +27,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         request = Mock()
         cookie = Mock(value="abcdefg")
         request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
+        request.arguments = {}
         self.handler = recipe_instance.RecipeInstanceHandler(app, request)
 
     def test_post(self):
@@ -89,4 +92,40 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         brewhouse = Brewhouse.objects.create(name="Foo")
         self.assertFalse(self.handler.has_permission(brewhouse))
 
+    def test_get_brewhouse_successfully(self):
+        brewhouse = Brewhouse.objects.create(name="Foo")
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        brewhouse_found = self.handler.get_brewhouse()
+        self.assertTrue(brewhouse_found)
+        self.assertEquals(self.handler.brewhouse, brewhouse)
+        self.assertEquals(self.handler._status_code, status.HTTP_200_OK)
+
+    def test_get_brewhouse_does_not_exist(self):
+        brewhouse = Brewhouse.objects.create(name="Foo")
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk + 1)
+        brewhouse_found = self.handler.get_brewhouse()
+        self.assertFalse(brewhouse_found)
+        self.assertIsNone(self.handler.brewhouse)
+        self.assertEquals(self.handler._status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_register_waiter_brewhouse_exists_already_in_waiters(self):
+        brewhouse = Brewhouse.objects.create(name="Foo")
+        future = Future()
+        self.handler.waiters[brewhouse] = set()
+        self.handler.brewhouse = brewhouse
+        self.handler.future = future
+        self.handler.register_waiter()
+        self.assertEquals(self.handler.waiters[brewhouse], {future})
+
+    def test_register_waiter_brewhouse_doesnt_yet_exist_in_waiters(self):
+        brewhouse = Brewhouse.objects.create(name="Foo")
+        future = Future()
+        self.handler.brewhouse = brewhouse
+        self.handler.future = future
+        self.handler.register_waiter()
+        self.assertEquals(self.handler.waiters[brewhouse], {future})
+
+
+class TestRecipeInstanceStartHandler(JouliaTestCase):
+    pass
     #IOLoop.current().run_sync(lambda: self._connect(address))

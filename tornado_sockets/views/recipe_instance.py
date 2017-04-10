@@ -4,6 +4,7 @@ RecipeInstance's.
 
 import logging
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework import status
@@ -40,8 +41,8 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
         self.future = None
 
     def post(self, *args, **kwargs):
-        """The post handler, which should be set by the child class in
-        order to handle the start/end requests.
+        """The post handler, which should be set by the child class in order to
+        handle the start/end requests.
         """
         raise NotImplementedError()
 
@@ -62,7 +63,7 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
             LOGGER.warning('Brewhouse not in waiters')
 
     def on_connection_close(self):
-        self.waiters[self.brewhouse].remove(self.future)
+        self._handle_lost_connection()
 
     def has_permission(self, brewhouse):
         """Checks if the currently authenticated user has access to the
@@ -86,12 +87,43 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
 
         return permission
 
+    def get_brewhouse(self):
+        """Attempts to set `brewhouse` attribute based on the provided argument.
+        If not found, sets the status as a 404 and returns False. If found,
+        returns True and sets `brewhouse`."""
+        brewhouse_pk = self.get_argument('brewhouse')
+        try:
+            self.brewhouse = Brewhouse.objects.get(pk=brewhouse_pk)
+        except ObjectDoesNotExist:
+            self.set_status(status.HTTP_404_NOT_FOUND,
+                            'Brewhouse {} not found.'.format(brewhouse_pk))
+            return False
+        else:
+            return True
+
+    def register_waiter(self):
+        """Registers the currently set future as a waiter for the brewhouse."""
+        if self.brewhouse not in self.waiters:
+            # TODO(willjschmitt): Consider making set into weakref set so the
+            # futures in it can disappear from the class variable incase the
+            # instance goes away.
+            self.waiters[self.brewhouse] = set()
+        self.waiters[self.brewhouse].add(self.future)
+
+    def _handle_lost_connection(self):
+        """Removes current future for brewhouse."""
+        LOGGER.debug('Lost waiter connection')
+        waiter = self.waiters[self.brewhouse]
+        waiter.remove(self.future)
+        return
+
 
 class RecipeInstanceStartHandler(RecipeInstanceHandler):
-    """A long-polling request to see if a brewhouse has a recipe launched. If a
-    brewhouse is already launched, the request is immediately fulfilled. If the
-    brewhouse is not launched, the request returns once the brewhouse has a
-    recipe launched.
+    """A long-polling request to monitor a brewhouse until it has a recipe
+    launched. If a recipe instance is already launched on it, the request is
+    immediately fulfilled. If the brewhouse is not launched, the request returns
+    once the brewhouse has a recipe launched. The returned result includes the
+    active recipe instance keyed on "recipe_instance".
     """
     waiters = {}
 
@@ -106,14 +138,16 @@ class RecipeInstanceStartHandler(RecipeInstanceHandler):
         Raises:
             403_FORBIDDEN response: if user is not authorized to access
                 brewhouse through brewing company association.
+            404_NOT_FOUND response: if the requested brewhouse does not exist.
 
         Returns:
             A yielded waiter attached to class object to receive update when the
             yield is returned.
         """
-        LOGGER.info("Got start watch request")
-        brewhouse_id = self.get_argument('brewhouse')
-        self.brewhouse = Brewhouse.objects.get(pk=brewhouse_id)
+        LOGGER.info("Got start watch request.")
+        brewhouse_found = self.get_brewhouse()
+        if not brewhouse_found:
+            return
 
         if not self.has_permission(self.brewhouse):
             return
@@ -123,26 +157,25 @@ class RecipeInstanceStartHandler(RecipeInstanceHandler):
             recipe_instance = self.brewhouse.active_recipe_instance
             self.future.set_result({"recipe_instance": recipe_instance.pk})
         else:
-            if self.brewhouse not in RecipeInstanceStartHandler.waiters:
-                RecipeInstanceStartHandler.waiters[self.brewhouse] = set()
-            RecipeInstanceStartHandler.waiters[self.brewhouse].add(self.future)
+            self.register_waiter()
 
         messages = yield self.future
-        if self.request.connection.stream.closed():
-            LOGGER.debug('Lost waiter connection')
-            waiter = RecipeInstanceStartHandler.waiters[self.brewhouse]
-            waiter.remove(self.future)
-            return
-        self.write(dict(messages=messages))
 
-        return
+        if self.request.connection.stream.closed():
+            self._handle_lost_connection()
+            return
+
+        self.write(dict(messages=messages))
 
 
 class RecipeInstanceEndHandler(RecipeInstanceHandler):
     """A long-polling request to wait for a recipe instance to be ended for a
     Brewhouse. If a brewhouse does not have any active recipe instance, the
-    request is immediately fulfilled. If the brewhouse is launched, the request
-    returns once the brewhouse is requested to end its instance.
+    request is immediately fulfilled. If the brewhouse has an active recipe
+    instance, the request returns once the brewhouse is requested to end its
+    instance. The request returns the recipe_instance in the response keyed on
+    itself if one was active while waiting. If there was no instance active on
+    request, returns None for the recipe_instance.
     """
     waiters = {}
 
@@ -157,32 +190,33 @@ class RecipeInstanceEndHandler(RecipeInstanceHandler):
         Raises:
             403_FORBIDDEN response: if user is not authorized to access
                 brewhouse through brewing company association.
+            404_NOT_FOUND response: if the requested brewhouse does not exist.
 
         Returns:
             A yielded waiter attached to class object to receive update when the
             yield is returned.
         """
         LOGGER.info("Got end watch request.")
-        self.brewhouse = Brewhouse.objects.get(
-            pk=self.get_argument('brewhouse'))
+        brewhouse_found = self.get_brewhouse()
+        if not brewhouse_found:
+            return
 
         if not self.has_permission(self.brewhouse):
             return
 
         self.future = Future()
-        if self.brewhouse.active:
-            if self.brewhouse not in RecipeInstanceEndHandler.waiters:
-                RecipeInstanceEndHandler.waiters[self.brewhouse] = set()
-            RecipeInstanceEndHandler.waiters[self.brewhouse].add(self.future)
+        if not self.brewhouse.active:
+            self.future.set_result({"recipe_instance": None})
+        else:
+            self.register_waiter()
 
         messages = yield self.future
-        if self.request.connection.stream.closed():
-            LOGGER.debug('Lost waiter connection')
-            RecipeInstanceEndHandler.waiters[self.brewhouse].remove(self.future)
-            return
-        self.write(dict(messages=messages))
 
-        return
+        if self.request.connection.stream.closed():
+            self._handle_lost_connection()
+            return
+
+        self.write(dict(messages=messages))
 
 
 @receiver(post_save, sender=RecipeInstance)
