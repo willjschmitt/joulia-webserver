@@ -119,3 +119,9 @@ class IsMemberOfBrewingCompanyFunctionTest(TestCase):
         brewing_company = models.BrewingCompany(group=group)
         self.assertFalse(permissions.is_member_of_brewing_company(
             user, brewing_company))
+
+    def test_no_group(self):
+        user = User.objects.create(username="user")
+        brewing_company = models.BrewingCompany()
+        self.assertFalse(permissions.is_member_of_brewing_company(
+            user, brewing_company))
