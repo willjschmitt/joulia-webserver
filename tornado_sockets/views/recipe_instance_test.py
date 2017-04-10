@@ -4,7 +4,9 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from rest_framework import status
+from tornado import gen
 from tornado.concurrent import Future
+from tornado.escape import utf8
 from tornado.ioloop import IOLoop
 from unittest.mock import MagicMock
 from unittest.mock import Mock
@@ -231,3 +233,117 @@ class TestRecipeInstanceStartHandler(JouliaTestCase):
         request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
         request.arguments = {}
         self.handler = recipe_instance.RecipeInstanceStartHandler(app, request)
+        self.handler.request.connection.stream.closed = MagicMock(
+            return_value=False)
+
+    @test_with_fake_session_backend
+    def test_active_returns_instance(self):
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+        recipe = Recipe.objects.create(name="Baz")
+        instance = RecipeInstance.objects.create(recipe=recipe, active=True,
+                                                 brewhouse=brewhouse)
+
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        IOLoop.current().run_sync(self.handler.post)
+        self.assertIn(utf8('{{"recipe_instance": {}}}'.format(instance.pk)),
+                      self.handler._write_buffer)
+
+    @test_with_fake_session_backend
+    def test_inactive_waits_and_returns_new_instance(self):
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+        recipe = Recipe.objects.create(name="Baz")
+
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        instance = RecipeInstance.objects.create(recipe=recipe, active=False,
+                                                 brewhouse=brewhouse)
+
+        # TODO(willjschmitt): This test might be flaky because there may be a
+        # race condition below. I don't have enough grasp of tornado to be sure
+        # though. Beware.
+        @gen.coroutine
+        def run_and_add_instance():
+            self.handler.post()
+            instance.active = True
+            instance.save()
+
+        IOLoop.current().run_sync(run_and_add_instance, timeout=2.0)
+
+        self.assertIn(utf8('{{"recipe_instance": {}}}'.format(instance.pk)),
+                      self.handler._write_buffer)
+
+
+class TestRecipeInstanceEndHandler(JouliaTestCase):
+    """Tests for the RecipeInstanceEndHandler."""
+
+    def setUp(self):
+        app = Mock()
+        app.ui_methods = {}
+        request = Mock()
+        cookie = Mock(value="abcdefg")
+        request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
+        request.arguments = {}
+        self.handler = recipe_instance.RecipeInstanceEndHandler(app, request)
+        self.handler.request.connection.stream.closed = MagicMock(
+            return_value=False)
+
+    @test_with_fake_session_backend
+    def test_inactive_returns_none(self):
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+        recipe = Recipe.objects.create(name="Baz")
+        RecipeInstance.objects.create(recipe=recipe, active=False,
+                                      brewhouse=brewhouse)
+
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        IOLoop.current().run_sync(self.handler.post, timeout=2.0)
+        self.assertIn(b'{"recipe_instance": null}', self.handler._write_buffer)
+
+    @test_with_fake_session_backend
+    def test_inactive_waits_and_returns_new_instance(self):
+        group = Group.objects.create(name="Baz")
+        user = User.objects.create(username="john_doe")
+        group.user_set.add(user)
+        self.force_tornado_login(user)
+        brewing_company = BrewingCompany.objects.create(group=group)
+        brewery = Brewery.objects.create(name="Foo", company=brewing_company)
+
+        brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
+        recipe = Recipe.objects.create(name="Baz")
+
+        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        instance = RecipeInstance.objects.create(recipe=recipe, active=True,
+                                                 brewhouse=brewhouse)
+
+        # TODO(willjschmitt): This test might be flaky because there may be a
+        # race condition below. I don't have enough grasp of tornado to be sure
+        # though. Beware.
+        @gen.coroutine
+        def run_and_end_instance():
+            self.handler.post()
+            instance.active = False
+            instance.save()
+
+        IOLoop.current().run_sync(run_and_end_instance, timeout=2.0)
+
+        self.assertIn(utf8('{{"recipe_instance": {}}}'.format(instance.pk)),
+                      self.handler._write_buffer)
