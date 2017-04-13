@@ -16,6 +16,7 @@ from tornado.websocket import websocket_connect
 from unittest.mock import Mock
 
 from brewery import models
+from main import joulia_app
 from testing.test import JouliaTestCase
 from tornado_sockets.views import timeseries
 
@@ -69,10 +70,7 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         self.sensor = models.AssetSensor.objects.create()
 
     def get_app(self):
-        app = Application([
-            (r'/live/timeseries/socket/', timeseries.TimeSeriesSocketHandler)
-        ])
-        return app
+        return joulia_app()
 
     @gen.coroutine
     def generate_websocket(self):
