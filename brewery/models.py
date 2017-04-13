@@ -5,6 +5,7 @@ from datetime import datetime
 from django.contrib.auth.models import Group
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.utils import timezone
 from rest_framework.authtoken.models import Token
 
 
@@ -162,7 +163,8 @@ class AssetSensor(models.Model):
     brewhouse = models.ForeignKey(Brewhouse, null=True)
 
     def __str__(self):
-        return "{}-{}".format(self.brewhouse.name, self.name)
+        brewhouse = self.brewhouse.name if self.brewhouse is not None else None
+        return "{}-{}".format(brewhouse, self.name)
 
 
 class TimeSeriesDataPoint(models.Model):
@@ -180,8 +182,8 @@ class TimeSeriesDataPoint(models.Model):
     sensor = models.ForeignKey(AssetSensor)
     recipe_instance = models.ForeignKey(RecipeInstance)
 
-    time = models.DateTimeField()
-    value = models.FloatField()
+    time = models.DateTimeField(default=timezone.now)
+    value = models.FloatField(null=True)
 
     def __str__(self):
         return "{} - {} @ {}".format(
