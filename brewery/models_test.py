@@ -186,6 +186,9 @@ class AssetSensorTest(TestCase):
                                                    brewhouse=brewhouse)
         self.assertEquals(str(sensor), "Foo-Bar")
 
+    def test_str_no_brewhouse(self):
+        sensor = models.AssetSensor.objects.create(name="Bar")
+        self.assertEquals(str(sensor), "None-Bar")
 
 class TimeSeriesDataPointTest(TestCase):
     """Tests for the TimeSeriesDataPoint model."""
