@@ -1,7 +1,12 @@
 """Main entry point for running the webserver.
 """
 import os.path
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joulia.settings")
+
 import logging
+import django
+if django.VERSION[1] > 5:
+    django.setup()
 import django.core.handlers.wsgi
 import tornado.httpserver
 import tornado.ioloop
@@ -11,17 +16,17 @@ import tornado.wsgi
 
 import tornado_sockets.urls
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "joulia.settings")
-if django.VERSION[1] > 5:
-    django.setup()
 
 define("port", default=8888, help="run on the given port", type=int)
 define("debug", default=False, help="run in debug mode")
 
+
+LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
 def main():
+    LOGGER.info("Starting Joulia server on port %d.", options.port)
     tornado_app = joulia_app()
     server = tornado.httpserver.HTTPServer(tornado_app)
     server.listen(options.port)
