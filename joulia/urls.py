@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^admin/', admin.site.urls),
     url('^', include('brewery.urls')),
+    url('^', include('auth.urls')),
 
     url('', include('social_django.urls', namespace='social')),
     url(r'^login/google-oauth2/$', social_views.auth,
