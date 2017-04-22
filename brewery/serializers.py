@@ -9,7 +9,7 @@ class BrewingCompanySerializer(serializers.ModelSerializer):
     """Standard serializer for BrewingCompany model."""
     class Meta:
         model = models.BrewingCompany
-        fields = ('group', 'name',)
+        fields = ('id', 'group', 'name',)
 
 
 class BrewerySerializer(serializers.ModelSerializer):
