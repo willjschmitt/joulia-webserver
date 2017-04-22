@@ -39,7 +39,7 @@ pip-delete-this-directory.txt
 *.pydevproject
 
 #django setup
-static_assets/
+static/
 
 # Unit test / coverage reports
 htmlcov/

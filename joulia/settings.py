@@ -147,15 +147,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static_assets')
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'static'),
-    os.path.join(BASE_DIR, 'components'),
-    os.path.join(BASE_DIR, 'bower_components')
-)
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 STATIC_DIRS = (
-    os.path.join(BASE_DIR, 'static_assets'),
+    os.path.join(BASE_DIR, 'static'),
 )
 
 STATICFILES_FINDERS = (
