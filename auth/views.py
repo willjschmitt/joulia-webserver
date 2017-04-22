@@ -2,6 +2,7 @@
 """
 # pylint: disable=too-many-ancestors
 
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,5 +15,8 @@ class UserView(APIView):
     def get(self, request, format=None):
         """Returns the currently logged in user."""
         user = request.user
-        serializer = serializers.UserSerializer(user)
-        return Response(serializer.data)
+        if not user.is_authenticated():
+            return Response({}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            serializer = serializers.UserSerializer(user)
+            return Response(serializer.data)

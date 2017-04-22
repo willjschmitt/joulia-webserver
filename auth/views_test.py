@@ -12,12 +12,13 @@ class TestUserView(TestCase):
 
     def setUp(self):
         self.c = Client()
+
+    def test_get_user_logged_in(self):
         User.objects.create_user("john", "john@example.com", "smith",
                                  first_name="john", last_name="smith")
         self.c.post('/login/', {'username': 'john', 'password': 'smith'})
-
-    def test_get_user(self):
-        response = self.c.get('/auth/api/user/', content_type="application/json")
+        response = self.c.get('/auth/api/user/',
+                              content_type="application/json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         want = {
@@ -27,4 +28,12 @@ class TestUserView(TestCase):
             "groups": [],
             "username": "john",
         }
+        self.assertEqual(response_data, want)
+
+    def test_get_user_logged_out(self):
+        response = self.c.get('/auth/api/user/',
+                              content_type="application/json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response_data = response.json()
+        want = {}
         self.assertEqual(response_data, want)
