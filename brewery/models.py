@@ -125,11 +125,18 @@ class RecipeInstance(models.Model):
         date: The date this instance was started.
         brewhouse: The brewhouse equipment this was brewed on.
         active: If the recipe instance is still in progress.
+        original_gravity: The specific gravity of the unfermented wort.
+        final_gravity: The specific gravity of the fermented wort.
     """
     recipe = models.ForeignKey(Recipe)
     date = models.DateField(default=datetime.now)
     brewhouse = models.ForeignKey(Brewhouse, null=True)
     active = models.BooleanField(default=False)
+
+    original_gravity = models.DecimalField(null=True, decimal_places=3,
+                                           max_digits=4)
+    final_gravity = models.DecimalField(null=True, decimal_places=3,
+                                        max_digits=4)
 
     def save(self, *args, **kwargs):
         # Make sure we don't initialize a recipe instance on an already active
