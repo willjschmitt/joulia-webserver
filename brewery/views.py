@@ -92,11 +92,23 @@ class RecipeListView(generics.ListCreateAPIView):
     serializer_class = serializers.RecipeSerializer
 
 
-class RecipeInstanceListView(generics.ListCreateAPIView):
-    """List and Create REST API view for ``RecipeInstance`` model."""
+class RecipeInstanceApiMixin(object):
+    """Common REST API view information for ``RecipeInstance`` model."""
     queryset = models.RecipeInstance.objects.all()
     serializer_class = serializers.RecipeInstanceSerializer
     filter_fields = ('id', 'active', 'brewhouse',)
+
+
+class RecipeInstanceListView(RecipeInstanceApiMixin,
+                             generics.ListCreateAPIView):
+    """List and Create REST API view for ``RecipeInstance`` model."""
+    pass
+
+
+class RecipeInstanceDetailView(RecipeInstanceApiMixin,
+                               generics.RetrieveUpdateAPIView):
+    """Retrieve and Update REST API view for ``RecipeInstance`` model."""
+    pass
 
 
 class TimeSeriesNewHandler(generics.CreateAPIView):
