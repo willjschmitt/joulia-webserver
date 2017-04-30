@@ -134,6 +134,10 @@ class MashPointTest(TestCase):
         self.assertEquals(mash_point_1.index, 1)
         self.assertEquals(mash_point_2.index, 0)
 
+    def test_saving_self_does_not_conflict_index(self):
+        mash_point = models.MashPoint.objects.create(recipe=self.recipe)
+        mash_point.save()
+
 
 class RecipeInstanceTest(TestCase):
     """Tests for the RecipeInstance model."""

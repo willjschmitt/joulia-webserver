@@ -141,7 +141,7 @@ class MashPoint(models.Model):
             self.index = new_index
         else:
             for mash_point in self.recipe.mashpoint_set.all():
-                if self.index == mash_point.index:
+                if self.index == mash_point.index and self != mash_point:
                     raise RuntimeError("A MashPoint cannot be saved with the "
                                        "same index as another in a Recipe.")
         super(MashPoint, self).save(*args, **kwargs)
