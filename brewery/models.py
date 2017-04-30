@@ -117,6 +117,36 @@ class Recipe(models.Model):
         return "{}({})".format(self.name, self.style)
 
 
+class MashPoint(models.Model):
+    """A temperature set point as a time, temperature pair.
+
+    Attributes:
+        recipe: The recipe this mash point applies to.
+        index: The index number for the mash point. Used for ordering mash
+            points.
+        time: Amount of time to mash at this temperature for (minutes).
+        temperature: Temperature to mash at (degrees Fahrenheit).
+    """
+    recipe = models.ForeignKey(Recipe)
+    index = models.IntegerField()
+    time = models.FloatField(default=0.0)
+    temperature = models.FloatField(default=0.0)
+
+    def save(self, *args, **kwargs):
+        if self.index is None:
+            new_index = 0
+            for mash_point in self.recipe.mashpoint_set.all():
+                if mash_point.index >= new_index:
+                    new_index = mash_point.index + 1
+            self.index = new_index
+        else:
+            for mash_point in self.recipe.mashpoint_set.all():
+                if self.index == mash_point.index:
+                    raise RuntimeError("A MashPoint cannot be saved with the "
+                                       "same index as another in a Recipe.")
+        super(MashPoint, self).save(*args, **kwargs)
+
+
 class RecipeInstance(models.Model):
     """An instance a recipe was brewed on a brewhouse.
 
