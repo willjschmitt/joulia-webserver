@@ -57,6 +57,15 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe.recipeinstance_set.count()
 
 
+class MashPointSerializer(serializers.ModelSerializer):
+    """Standard serializer for MashPoint."""
+    index = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = models.MashPoint
+        fields = '__all__'
+
+
 class RecipeInstanceSerializer(serializers.ModelSerializer):
     """Standard serializer for RecipeInstance."""
     class Meta:

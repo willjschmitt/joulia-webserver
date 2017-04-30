@@ -98,6 +98,47 @@ class RecipeTest(TestCase):
         self.assertEquals(str(recipe), "Foo(Bar)")
 
 
+class MashPointTest(TestCase):
+    """Tests for the MashPoint model."""
+
+    def setUp(self):
+        self.recipe = models.Recipe.objects.create(name="Foo")
+
+    def test_add_new_mash_point_increments_index(self):
+        mash_point_1 = models.MashPoint.objects.create(recipe=self.recipe)
+        self.assertEquals(mash_point_1.index, 0)
+        mash_point_2 = models.MashPoint.objects.create(recipe=self.recipe)
+        self.assertEquals(mash_point_2.index, 1)
+
+    def test_add_new_mash_point_increments_index_without_using_length(self):
+        models.MashPoint.objects.create(recipe=self.recipe, index=1)
+        mash_point = models.MashPoint.objects.create(recipe=self.recipe)
+        self.assertEquals(mash_point.index, 2)
+
+    def test_raise_runtime_error_when_saving_duplicate_index(self):
+        models.MashPoint.objects.create(recipe=self.recipe)
+        with self.assertRaisesRegex(RuntimeError,
+                                    "cannot be saved with the same index"):
+            models.MashPoint.objects.create(recipe=self.recipe, index=0)
+
+    def test_reordering_mash_points(self):
+        mash_point_1 = models.MashPoint.objects.create(recipe=self.recipe)
+        mash_point_2 = models.MashPoint.objects.create(recipe=self.recipe)
+        mash_point_1.index = None
+        mash_point_1.save()
+        mash_point_2.index = 0
+        mash_point_2.save()
+        mash_point_1.index = 1
+        mash_point_1.save()
+        mash_point_1.refresh_from_db()
+        self.assertEquals(mash_point_1.index, 1)
+        self.assertEquals(mash_point_2.index, 0)
+
+    def test_saving_self_does_not_conflict_index(self):
+        mash_point = models.MashPoint.objects.create(recipe=self.recipe)
+        mash_point.save()
+
+
 class RecipeInstanceTest(TestCase):
     """Tests for the RecipeInstance model."""
     def setUp(self):

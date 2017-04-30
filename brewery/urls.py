@@ -22,6 +22,10 @@ urlpatterns = [
     
     url(r"api/beerStyle/", views.BeerStyleListView.as_view()),
     url(r"api/recipe/$", views.RecipeListView.as_view()),
+    url(r"api/recipe/(?P<pk>[0-9]+)/$", views.RecipeDetailView.as_view()),
+    url(r"api/mash_point/$", views.MashPointListView.as_view()),
+    url(r"api/mash_point/(?P<pk>[0-9]+)/$",
+        views.MashPointDetailView.as_view()),
     url(r"api/recipeInstance/$", views.RecipeInstanceListView.as_view()),
     url(r"api/recipeInstance/(?P<pk>[0-9]+)/$",
         views.RecipeInstanceDetailView.as_view()),

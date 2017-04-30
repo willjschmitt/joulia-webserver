@@ -85,11 +85,38 @@ class BeerStyleListView(generics.ListCreateAPIView):
     queryset = models.BeerStyle.objects.all()
     serializer_class = serializers.BeerStyleSerializer
 
-
-class RecipeListView(generics.ListCreateAPIView):
-    """List and Create REST API view for ``Recipe`` model."""
+class RecipeAPIMixin(object):
+    """Common REST API view information for ``Recipe`` model."""
     queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
+
+
+class RecipeListView(RecipeAPIMixin, generics.ListCreateAPIView):
+    """List and Create REST API view for ``Recipe`` model."""
+    pass
+
+
+class RecipeDetailView(RecipeAPIMixin, generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``Recipe`` model."""
+    pass
+
+
+class MashPointAPIMixin(object):
+    """Common REST API view information for ``MashPoint`` model."""
+    queryset = models.MashPoint.objects.all()
+    serializer_class = serializers.MashPointSerializer
+    filter_fields = ('id', 'recipe',)
+
+
+class MashPointListView(MashPointAPIMixin, generics.ListCreateAPIView):
+    """List and create REST API for ``MashPoint`` model."""
+    pass
+
+
+class MashPointDetailView(MashPointAPIMixin,
+                          generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``MashPoint`` model."""
+    pass
 
 
 class RecipeInstanceApiMixin(object):
