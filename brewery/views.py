@@ -103,7 +103,7 @@ class RecipeDetailView(RecipeAPIMixin, generics.RetrieveUpdateDestroyAPIView):
 
 class MashPointAPIMixin(object):
     """Common REST API view information for ``MashPoint`` model."""
-    queryset = models.MashPoint.objects.all()
+    queryset = models.MashPoint.objects.all().order_by('index')
     serializer_class = serializers.MashPointSerializer
     filter_fields = ('id', 'recipe',)
 
