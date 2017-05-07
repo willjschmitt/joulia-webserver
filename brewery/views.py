@@ -8,7 +8,6 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotAllowed
 from django.http import JsonResponse
-import json
 import logging
 from rest_framework import generics
 from rest_framework import status
@@ -24,11 +23,14 @@ from brewery import serializers
 LOGGER = logging.getLogger(__name__)
 
 
-class BrewingCompanyApiMixin(object):
+class BrewingCompanyApiMixin(APIView):
     """Common REST API view information for ``BrewingCompany`` model."""
-    queryset = models.BrewingCompany.objects.all()
     serializer_class = serializers.BrewingCompanySerializer
     permission_classes = (IsAuthenticated, permissions.IsMember)
+
+    def get_queryset(self):
+        return models.BrewingCompany.objects.filter(
+            group__user=self.request.user)
 
 
 class BrewingCompanyListView(BrewingCompanyApiMixin,
@@ -44,11 +46,14 @@ class BrewingCompanyDetailView(BrewingCompanyApiMixin,
     pass
 
 
-class BreweryApiMixin(object):
+class BreweryApiMixin(APIView):
     """Common REST API view information for ``Brewery`` model."""
-    queryset = models.Brewery.objects.all()
     serializer_class = serializers.BrewerySerializer
     permission_classes = (IsAuthenticated, permissions.IsMemberOfBrewingCompany)
+
+    def get_queryset(self):
+        return models.Brewery.objects.filter(
+            company__group__user=self.request.user)
 
 
 class BreweryListView(BreweryApiMixin, generics.ListCreateAPIView):
@@ -61,12 +66,15 @@ class BreweryDetailView(BreweryApiMixin, generics.RetrieveUpdateDestroyAPIView):
     pass
 
 
-class BrewhouseApiMixin(object):
+class BrewhouseApiMixin(APIView):
     """Common REST API view information for ``Brewhouse`` model."""
-    queryset = models.Brewhouse.objects.all()
     serializer_class = serializers.BrewhouseSerializer
     permission_classes = (IsAuthenticated, permissions.IsMemberOfBrewery)
     filter_fields = ('id', 'brewery',)
+
+    def get_queryset(self):
+        return models.Brewhouse.objects.filter(
+            brewery__company__group__user=self.request.user)
 
 
 class BrewhouseListView(BrewhouseApiMixin, generics.ListCreateAPIView):
@@ -85,7 +93,8 @@ class BeerStyleListView(generics.ListCreateAPIView):
     queryset = models.BeerStyle.objects.all()
     serializer_class = serializers.BeerStyleSerializer
 
-class RecipeAPIMixin(object):
+
+class RecipeAPIMixin(APIView):
     """Common REST API view information for ``Recipe`` model."""
     queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
@@ -101,7 +110,7 @@ class RecipeDetailView(RecipeAPIMixin, generics.RetrieveUpdateDestroyAPIView):
     pass
 
 
-class MashPointAPIMixin(object):
+class MashPointAPIMixin(APIView):
     """Common REST API view information for ``MashPoint`` model."""
     queryset = models.MashPoint.objects.all().order_by('index')
     serializer_class = serializers.MashPointSerializer
@@ -119,7 +128,7 @@ class MashPointDetailView(MashPointAPIMixin,
     pass
 
 
-class RecipeInstanceApiMixin(object):
+class RecipeInstanceApiMixin(APIView):
     """Common REST API view information for ``RecipeInstance`` model."""
     queryset = models.RecipeInstance.objects.all()
     serializer_class = serializers.RecipeInstanceSerializer

@@ -6,8 +6,10 @@ from django.test import Client
 from django.test import TestCase
 import json
 from rest_framework import status
+from unittest.mock import Mock
 
 from brewery import models
+from brewery import views
 
 
 class BreweryTestBase(TestCase):
@@ -16,11 +18,13 @@ class BreweryTestBase(TestCase):
     def setUp(self):
         self.c = Client()
 
-        user = User.objects.create_user("john", "john@example.com", "smith")
+        self.good_user = User.objects.create_user("john", "john@example.com",
+                                                  "smith")
         group = Group.objects.create(name="Joulia Brewing Company")
-        group.user_set.add(user)
+        group.user_set.add(self.good_user)
         
-        User.objects.create_user("alex", "alex@example.com", "notamember")
+        self.bad_user = User.objects.create_user("alex", "alex@example.com",
+                                                 "notamember")
 
         self.brewing_company = models.BrewingCompany.objects.create(group=group)
         self.brewery = models.Brewery.objects.create(
@@ -37,8 +41,56 @@ class BreweryTestBase(TestCase):
         
     def login_as_alternate_user(self):
         self.c.post('/login/', {'username': 'alex', 'password': 'notamember'})
-        
-        
+
+
+class BrewingCompanyApiMixinTest(BreweryTestBase):
+    """Tests for BrewingCompanyApiMixin."""
+
+    def test_get_queryset_correct_user(self):
+        view = views.BrewingCompanyApiMixin()
+        view.request = Mock(user=self.good_user)
+        got = view.get_queryset()
+        self.assertIn(self.brewing_company, got)
+
+    def test_get_queryset_bad_user(self):
+        view = views.BrewingCompanyApiMixin()
+        view.request = Mock(user=self.bad_user)
+        got = view.get_queryset()
+        self.assertNotIn(self.brewing_company, got)
+
+
+class BreweryApiMixinTest(BreweryTestBase):
+    """Tests for BreweryApiMixin."""
+
+    def test_get_queryset_correct_user(self):
+        view = views.BreweryApiMixin()
+        view.request = Mock(user=self.good_user)
+        got = view.get_queryset()
+        self.assertIn(self.brewery, got)
+
+    def test_get_queryset_bad_user(self):
+        view = views.BreweryApiMixin()
+        view.request = Mock(user=self.bad_user)
+        got = view.get_queryset()
+        self.assertNotIn(self.brewery, got)
+
+
+class BrewhouseApiMixinTest(BreweryTestBase):
+    """Tests for BrewhouseApiMixin."""
+
+    def test_get_queryset_correct_user(self):
+        view = views.BrewhouseApiMixin()
+        view.request = Mock(user=self.good_user)
+        got = view.get_queryset()
+        self.assertIn(self.brewhouse, got)
+
+    def test_get_queryset_bad_user(self):
+        view = views.BrewhouseApiMixin()
+        view.request = Mock(user=self.bad_user)
+        got = view.get_queryset()
+        self.assertNotIn(self.brewhouse, got)
+
+
 class TimeSeriesIdentifyHandlerTest(BreweryTestBase):
     """Tests for TimeSeriesIdentifyHandler."""
 
