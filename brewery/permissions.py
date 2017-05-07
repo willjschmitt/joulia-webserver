@@ -26,7 +26,16 @@ class IsMemberOfBrewery(permissions.BasePermission):
         brewing_company = brewing_equipment.brewery.company
         return is_member_of_brewing_company(request.user, brewing_company)
 
-    
+
+class OwnsRecipe(permissions.BasePermission):
+    """Checks the current user is a member of the brewing company that owns the
+    recipe object is associated with.
+    """
+    def has_object_permission(self, request, view, obj):
+        brewing_company = obj.recipe.company
+        return is_member_of_brewing_company(request.user, brewing_company)
+
+
 def is_member_of_brewing_company(user, brewing_company):
     """Checks the user is a member of the brewing_company group.
 

@@ -102,6 +102,37 @@ class IsMemberOfBreweryTest(TestCase):
             request, view, brewhouse))
 
 
+class OwnsRecipeTest(TestCase):
+    """Tests for OwnsRecipe permissions class."""
+
+    def test_has_permission(self):
+        permission = permissions.OwnsRecipe()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
+        request = Mock()
+        request.user = user
+        view = None
+        brewing_company = models.BrewingCompany(group=group)
+        recipe = models.Recipe(company=brewing_company)
+        recipe_instance = models.RecipeInstance(recipe=recipe)
+        self.assertTrue(permission.has_object_permission(
+            request, view, recipe_instance))
+
+    def test_does_not_have_permission(self):
+        permission = permissions.OwnsRecipe()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        request = Mock()
+        request.user = user
+        view = None
+        brewing_company = models.BrewingCompany(group=group)
+        recipe = models.Recipe(company=brewing_company)
+        recipe_instance = models.RecipeInstance(recipe=recipe)
+        self.assertFalse(permission.has_object_permission(
+            request, view, recipe_instance))
+
+
 class IsMemberOfBrewingCompanyFunctionTest(TestCase):
     """Tests for is_member_of_brewing_company function."""
 

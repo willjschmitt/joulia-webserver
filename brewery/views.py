@@ -96,8 +96,12 @@ class BeerStyleListView(generics.ListCreateAPIView):
 
 class RecipeAPIMixin(APIView):
     """Common REST API view information for ``Recipe`` model."""
-    queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
+    permission_classes = (IsAuthenticated, permissions.IsMemberOfBrewingCompany)
+
+    def get_queryset(self):
+        return models.Recipe.objects.filter(
+            company__group__user=self.request.user)
 
 
 class RecipeListView(RecipeAPIMixin, generics.ListCreateAPIView):
@@ -112,9 +116,13 @@ class RecipeDetailView(RecipeAPIMixin, generics.RetrieveUpdateDestroyAPIView):
 
 class MashPointAPIMixin(APIView):
     """Common REST API view information for ``MashPoint`` model."""
-    queryset = models.MashPoint.objects.all().order_by('index')
     serializer_class = serializers.MashPointSerializer
+    permission_classes = (IsAuthenticated, permissions.OwnsRecipe)
     filter_fields = ('id', 'recipe',)
+
+    def get_queryset(self):
+        return models.MashPoint.objects.filter(
+            recipe__company__group__user=self.request.user).order_by('index')
 
 
 class MashPointListView(MashPointAPIMixin, generics.ListCreateAPIView):
@@ -130,9 +138,13 @@ class MashPointDetailView(MashPointAPIMixin,
 
 class RecipeInstanceApiMixin(APIView):
     """Common REST API view information for ``RecipeInstance`` model."""
-    queryset = models.RecipeInstance.objects.all()
     serializer_class = serializers.RecipeInstanceSerializer
+    permission_classes = (IsAuthenticated, permissions.OwnsRecipe)
     filter_fields = ('id', 'active', 'brewhouse',)
+
+    def get_queryset(self):
+        return models.RecipeInstance.objects.filter(
+            recipe__company__group__user=self.request.user)
 
 
 class RecipeInstanceListView(RecipeInstanceApiMixin,

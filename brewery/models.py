@@ -109,9 +109,12 @@ class Recipe(models.Model):
     Attributes:
         name: Human readable name for the recipe.
         style: Style for the recipe to conform to.
+        company: Brewing Company that owns the recipe.
     """
     name = models.CharField(max_length=64)
     style = models.ForeignKey(BeerStyle, null=True)
+
+    company = models.ForeignKey(BrewingCompany, null=True)
 
     def __str__(self):
         return "{}({})".format(self.name, self.style)

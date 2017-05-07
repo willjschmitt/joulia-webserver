@@ -34,7 +34,7 @@ class BreweryTestBase(TestCase):
         
         style = models.BeerStyle.objects.create(name="American IPA")
         self.recipe = models.Recipe.objects.create(
-            name="Schmittfaced", style=style)
+            name="Schmittfaced", style=style, company=self.brewing_company)
         
     def login_as_normal_user(self):
         self.c.post('/login/', {'username': 'john', 'password': 'smith'})
@@ -89,6 +89,63 @@ class BrewhouseApiMixinTest(BreweryTestBase):
         view.request = Mock(user=self.bad_user)
         got = view.get_queryset()
         self.assertNotIn(self.brewhouse, got)
+
+
+class RecipeAPIMixinTest(BreweryTestBase):
+    """Tests for RecipeAPIMixin."""
+
+    def test_get_queryset_correct_user(self):
+        view = views.RecipeAPIMixin()
+        view.request = Mock(user=self.good_user)
+        got = view.get_queryset()
+        self.assertIn(self.recipe, got)
+
+    def test_get_queryset_bad_user(self):
+        view = views.RecipeAPIMixin()
+        view.request = Mock(user=self.bad_user)
+        got = view.get_queryset()
+        self.assertNotIn(self.recipe, got)
+
+
+class MashPointAPIMixinTest(BreweryTestBase):
+    """Tests for MashPointAPIMixin."""
+
+    def setUp(self):
+        super(MashPointAPIMixinTest, self).setUp()
+        self.mash_point = models.MashPoint.objects.create(recipe=self.recipe)
+
+    def test_get_queryset_correct_user(self):
+        view = views.MashPointAPIMixin()
+        view.request = Mock(user=self.good_user)
+        got = view.get_queryset()
+        self.assertIn(self.mash_point, got)
+
+    def test_get_queryset_bad_user(self):
+        view = views.MashPointAPIMixin()
+        view.request = Mock(user=self.bad_user)
+        got = view.get_queryset()
+        self.assertNotIn(self.mash_point, got)
+
+
+class RecipeInstanceApiMixinTest(BreweryTestBase):
+    """Tests for RecipeInstanceApiMixin."""
+
+    def setUp(self):
+        super(RecipeInstanceApiMixinTest, self).setUp()
+        self.recipe_instance = models.RecipeInstance.objects.create(
+            recipe=self.recipe)
+
+    def test_get_queryset_correct_user(self):
+        view = views.RecipeInstanceApiMixin()
+        view.request = Mock(user=self.good_user)
+        got = view.get_queryset()
+        self.assertIn(self.recipe_instance, got)
+
+    def test_get_queryset_bad_user(self):
+        view = views.RecipeInstanceApiMixin()
+        view.request = Mock(user=self.bad_user)
+        got = view.get_queryset()
+        self.assertNotIn(self.recipe_instance, got)
 
 
 class TimeSeriesIdentifyHandlerTest(BreweryTestBase):
