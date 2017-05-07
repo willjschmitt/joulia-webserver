@@ -88,7 +88,7 @@ class BrewhouseDetailView(BrewhouseApiMixin,
     pass
 
 
-class BeerStyleListView(generics.ListCreateAPIView):
+class BeerStyleListView(generics.ListAPIView):
     """List and Create REST API view for ``BeerStyle`` model."""
     queryset = models.BeerStyle.objects.all()
     serializer_class = serializers.BeerStyleSerializer
