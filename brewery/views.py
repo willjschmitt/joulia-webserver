@@ -192,6 +192,11 @@ class TimeSeriesIdentifyHandler(APIView):
             brewhouse_id = request.data['brewhouse']
             brewhouse = models.Brewhouse.objects.get(id=brewhouse_id)
 
+        if not permissions.is_member_of_brewing_company(
+                request.user, brewhouse.brewery.company):
+            return HttpResponseForbidden(
+                'Access not permitted to brewing equipment.')
+
         # See if we can get an existing AssetSensor.
         try:
             sensor = models.AssetSensor.objects.get(name=name,

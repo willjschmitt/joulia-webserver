@@ -129,6 +129,18 @@ class TimeSeriesIdentifyHandlerTest(BreweryTestBase):
 
         self.assertEqual(post_sensorcount, pre_sensorcount+1)
 
+    def test_end_instance_no_permission(self):
+        self.login_as_alternate_user()
+        recipe_instance = models.RecipeInstance.objects.create(
+            recipe=self.recipe, brewhouse=self.brewhouse, active=True)
+
+        data = {'recipe_instance': recipe_instance.pk,
+                'name': "nonexisting_sensor"}
+        response = self.c.post('/live/timeseries/identify/',
+                               content_type="application/json",
+                               data=json.dumps(data))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class LaunchRecipeInstanceTest(BreweryTestBase):
     """Tests for launch_recipe_instance view."""
