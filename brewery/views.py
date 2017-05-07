@@ -161,8 +161,13 @@ class RecipeInstanceDetailView(RecipeInstanceApiMixin,
 
 class TimeSeriesNewHandler(generics.CreateAPIView):
     """Create REST API view for ``TimeSeriesDataPoint`` model."""
-    queryset = models.TimeSeriesDataPoint.objects.all()
     serializer_class = serializers.TimeSeriesDataPointSerializer
+    permission_classes = (IsAuthenticated, permissions.OwnsSensor)
+
+    def get_queryset(self):
+        return models.TimeSeriesDataPoint.objects.filter(
+            sensor__brewhouse__brewery__company__group__user=
+            self.request.user)
 
 
 class TimeSeriesIdentifyHandler(APIView):

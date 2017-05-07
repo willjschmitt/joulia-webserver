@@ -133,6 +133,47 @@ class OwnsRecipeTest(TestCase):
             request, view, recipe_instance))
 
 
+class OwnsSensorTest(TestCase):
+    """Tests for OwnsSensor permissions class."""
+
+    def test_has_permission(self):
+        permission = permissions.OwnsSensor()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
+        request = Mock()
+        request.user = user
+        view = None
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+        recipe = models.Recipe.objects.create(company=brewing_company)
+        recipe_instance = models.RecipeInstance.objects.create(recipe=recipe)
+        sensor = models.AssetSensor.objects.create(brewhouse=brewhouse)
+        data_point = models.TimeSeriesDataPoint.objects.create(
+            sensor=sensor, recipe_instance=recipe_instance)
+        self.assertTrue(permission.has_object_permission(
+            request, view, data_point))
+
+    def test_does_not_have_permission(self):
+        permission = permissions.OwnsSensor()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        request = Mock()
+        request.user = user
+        view = None
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+        recipe = models.Recipe.objects.create(company=brewing_company)
+        recipe_instance = models.RecipeInstance.objects.create(recipe=recipe)
+        sensor = models.AssetSensor.objects.create(brewhouse=brewhouse)
+        data_point = models.TimeSeriesDataPoint.objects.create(
+            sensor=sensor, recipe_instance=recipe_instance)
+        self.assertFalse(permission.has_object_permission(
+            request, view, data_point))
+
+
 class IsMemberOfBrewingCompanyFunctionTest(TestCase):
     """Tests for is_member_of_brewing_company function."""
 

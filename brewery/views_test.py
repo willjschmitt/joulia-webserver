@@ -148,6 +148,30 @@ class RecipeInstanceApiMixinTest(BreweryTestBase):
         self.assertNotIn(self.recipe_instance, got)
 
 
+class TimeSeriesNewHandlerTest(BreweryTestBase):
+    """Tests for TimeSeriesNewHandler."""
+
+    def setUp(self):
+        super(TimeSeriesNewHandlerTest, self).setUp()
+        sensor = models.AssetSensor.objects.create(brewhouse=self.brewhouse)
+        recipe_instance = models.RecipeInstance.objects.create(
+            recipe=self.recipe)
+        self.data_point = models.TimeSeriesDataPoint.objects.create(
+            sensor=sensor, recipe_instance=recipe_instance)
+
+    def test_get_queryset_correct_user(self):
+        view = views.TimeSeriesNewHandler()
+        view.request = Mock(user=self.good_user)
+        got = view.get_queryset()
+        self.assertIn(self.data_point, got)
+
+    def test_get_queryset_bad_user(self):
+        view = views.TimeSeriesNewHandler()
+        view.request = Mock(user=self.bad_user)
+        got = view.get_queryset()
+        self.assertNotIn(self.data_point, got)
+
+
 class TimeSeriesIdentifyHandlerTest(BreweryTestBase):
     """Tests for TimeSeriesIdentifyHandler."""
 
