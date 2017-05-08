@@ -41,7 +41,43 @@ class IsMemberTest(TestCase):
 class IsMemberOfBrewingCompanyTest(TestCase):
     """Tests for IsMemberOfBrewingCompany permissions class."""
 
-    def test_has_permission(self):
+    def test_has_permission_safe_method(self):
+        permission = permissions.IsMemberOfBrewingCompany()
+        request = Mock()
+        request.method = "GET"
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_member_of_company(self):
+        permission = permissions.IsMemberOfBrewingCompany()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "company": brewing_company.pk,
+        }
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_not_member_of_company(self):
+        permission = permissions.IsMemberOfBrewingCompany()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "company": brewing_company.pk,
+        }
+        view = None
+        self.assertFalse(permission.has_permission(request, view))
+
+    def test_has_object_permission(self):
         permission = permissions.IsMemberOfBrewingCompany()
         user = User.objects.create(username="user")
         group = Group.objects.create(name="group")
@@ -55,7 +91,7 @@ class IsMemberOfBrewingCompanyTest(TestCase):
         self.assertTrue(permission.has_object_permission(
             request, view, brewery))
 
-    def test_does_not_have_permission(self):
+    def test_does_not_have_object_permission(self):
         permission = permissions.IsMemberOfBrewingCompany()
         user = User.objects.create(username="user")
         group = Group.objects.create(name="group")
@@ -72,7 +108,45 @@ class IsMemberOfBrewingCompanyTest(TestCase):
 class IsMemberOfBreweryTest(TestCase):
     """Tests for IsMemberOfBrewery permissions class."""
 
-    def test_has_permission(self):
+    def test_has_permission_safe_method(self):
+        permission = permissions.IsMemberOfBrewery()
+        request = Mock()
+        request.method = "GET"
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_member_of_company(self):
+        permission = permissions.IsMemberOfBrewery()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "brewery": brewery.pk,
+        }
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_not_member_of_company(self):
+        permission = permissions.IsMemberOfBrewery()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "brewery": brewery.pk,
+        }
+        view = None
+        self.assertFalse(permission.has_permission(request, view))
+
+    def test_has_object_permission(self):
         permission = permissions.IsMemberOfBrewery()
         user = User.objects.create(username="user")
         group = Group.objects.create(name="group")
@@ -87,7 +161,7 @@ class IsMemberOfBreweryTest(TestCase):
         self.assertTrue(permission.has_object_permission(
             request, view, brewhouse))
 
-    def test_does_not_have_permission(self):
+    def test_does_not_have_object_permission(self):
         permission = permissions.IsMemberOfBrewery()
         user = User.objects.create(username="user")
         group = Group.objects.create(name="group")
@@ -104,6 +178,44 @@ class IsMemberOfBreweryTest(TestCase):
 
 class OwnsRecipeTest(TestCase):
     """Tests for OwnsRecipe permissions class."""
+
+    def test_has_permission_safe_method(self):
+        permission = permissions.OwnsRecipe()
+        request = Mock()
+        request.method = "GET"
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_member_of_company(self):
+        permission = permissions.OwnsRecipe()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        recipe = models.Recipe.objects.create(company=brewing_company)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "recipe": recipe.pk,
+        }
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_not_member_of_company(self):
+        permission = permissions.OwnsRecipe()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        recipe = models.Recipe.objects.create(company=brewing_company)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "recipe": recipe.pk,
+        }
+        view = None
+        self.assertFalse(permission.has_permission(request, view))
 
     def test_has_permission(self):
         permission = permissions.OwnsRecipe()
@@ -135,6 +247,48 @@ class OwnsRecipeTest(TestCase):
 
 class OwnsSensorTest(TestCase):
     """Tests for OwnsSensor permissions class."""
+
+    def test_has_permission_safe_method(self):
+        permission = permissions.OwnsSensor()
+        request = Mock()
+        request.method = "GET"
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_member_of_company(self):
+        permission = permissions.OwnsSensor()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+        sensor = models.AssetSensor.objects.create(brewhouse=brewhouse)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "sensor": sensor.pk,
+        }
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_not_member_of_company(self):
+        permission = permissions.OwnsSensor()
+        user = User.objects.create(username="user")
+        group = Group.objects.create(name="group")
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+        sensor = models.AssetSensor.objects.create(brewhouse=brewhouse)
+        request = Mock()
+        request.user = user
+        request.method = "POST"
+        request.POST = {
+            "sensor": sensor.pk,
+        }
+        view = None
+        self.assertFalse(permission.has_permission(request, view))
 
     def test_has_permission(self):
         permission = permissions.OwnsSensor()
