@@ -42,7 +42,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Recipe
-        fields = ('id', 'name', 'style', 'last_brewed', 'number_of_batches',)
+        fields = ('id', 'name', 'style', 'last_brewed', 'number_of_batches',
+                  'company',)
 
     @staticmethod
     def get_last_brewed(recipe):
