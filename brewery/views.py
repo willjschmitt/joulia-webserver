@@ -1,148 +1,320 @@
-import tornado.escape
-import tornado.ioloop
-import tornado.web
-import tornado.websocket
-from tornado.websocket import WebSocketClosedError
+"""Views for the django ``Brewery`` application.
+"""
+# pylint: disable=too-many-ancestors
 
-from tornado.concurrent import Future
-from tornado import gen
-
-from django.core.wsgi import get_wsgi_application
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
-application = get_wsgi_application()
-
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from models import Brewery
-from models import Asset,AssetSensor
-from models import Recipe,RecipeInstance
-from models import TimeSeriesDataPoint
-
-from django.db.models import ForeignKey
-
+from django.http import HttpResponseBadRequest
+from django.http import HttpResponseForbidden
+from django.http import HttpResponseNotAllowed
+from django.http import JsonResponse
 import logging
+from rest_framework import generics
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from tornado.escape import json_decode
 
-# Create your views here.
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.render("index.html",brewery=Brewery.objects.get(pk=1))
+from brewery import models
+from brewery import permissions
+from brewery import serializers
 
 
+LOGGER = logging.getLogger(__name__)
 
-class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler):
-    waiters = set()
-    cache = []
-    cache_size = 200
-    
-    subscriptions = {}
 
-    def get_compression_options(self):
-        # Non-None enables compression with default options.
-        return {}
+class BrewingCompanyApiMixin(APIView):
+    """Common REST API view information for ``BrewingCompany`` model."""
+    serializer_class = serializers.BrewingCompanySerializer
+    permission_classes = (IsAuthenticated, permissions.IsMember)
 
-    '''
-    Core websocket functions
-    '''
-    def open(self):
-        logging.info("New websocket connection incomming {}".format(self))
-        TimeSeriesSocketHandler.waiters.add(self)
-        logging.info("returning {}".format(self))
+    def get_queryset(self):
+        return models.BrewingCompany.objects.filter(
+            group__user=self.request.user)
 
-    def on_close(self):
-        TimeSeriesSocketHandler.waiters.remove(self)
-        for subscriptionName, subscription in TimeSeriesSocketHandler.subscriptions.iteritems():
-            try: subscription.remove(self)
-            except KeyError: pass
-            
-    def on_message(self, message):
-        parsedMessage = tornado.escape.json_decode(message)
-        logging.debug('parsed message is {}'.format(parsedMessage))
-        #we are subscribing to a 
-        if 'subscribe' in parsedMessage:
-            self.subscribe(parsedMessage)
+
+class BrewingCompanyListView(BrewingCompanyApiMixin,
+                             generics.ListCreateAPIView):
+    """List and Create REST API view for ``BrewingCompany`` model."""
+    pass
+
+
+class BrewingCompanyDetailView(BrewingCompanyApiMixin,
+                               generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``BrewingCompany``model.
+    """
+    pass
+
+
+class BreweryApiMixin(APIView):
+    """Common REST API view information for ``Brewery`` model."""
+    serializer_class = serializers.BrewerySerializer
+    permission_classes = (IsAuthenticated, permissions.IsMemberOfBrewingCompany)
+
+    def get_queryset(self):
+        return models.Brewery.objects.filter(
+            company__group__user=self.request.user)
+
+
+class BreweryListView(BreweryApiMixin, generics.ListCreateAPIView):
+    """List and Create REST API view for ``Brewery`` model."""
+    pass
+
+
+class BreweryDetailView(BreweryApiMixin, generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``Brewery``model."""
+    pass
+
+
+class BrewhouseApiMixin(APIView):
+    """Common REST API view information for ``Brewhouse`` model."""
+    serializer_class = serializers.BrewhouseSerializer
+    permission_classes = (IsAuthenticated, permissions.IsMemberOfBrewery)
+    filter_fields = ('id', 'brewery',)
+
+    def get_queryset(self):
+        return models.Brewhouse.objects.filter(
+            brewery__company__group__user=self.request.user)
+
+
+class BrewhouseListView(BrewhouseApiMixin, generics.ListCreateAPIView):
+    """List and Create REST API view for ``Brewhouse`` model."""
+    pass
+
+
+class BrewhouseDetailView(BrewhouseApiMixin,
+                          generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``Brewhouse``model."""
+    pass
+
+
+class BeerStyleListView(generics.ListAPIView):
+    """List and Create REST API view for ``BeerStyle`` model."""
+    queryset = models.BeerStyle.objects.all()
+    serializer_class = serializers.BeerStyleSerializer
+
+
+class RecipeAPIMixin(APIView):
+    """Common REST API view information for ``Recipe`` model."""
+    serializer_class = serializers.RecipeSerializer
+    permission_classes = (IsAuthenticated, permissions.IsMemberOfBrewingCompany)
+
+    def get_queryset(self):
+        return models.Recipe.objects.filter(
+            company__group__user=self.request.user)
+
+
+class RecipeListView(RecipeAPIMixin, generics.ListCreateAPIView):
+    """List and Create REST API view for ``Recipe`` model."""
+    pass
+
+
+class RecipeDetailView(RecipeAPIMixin, generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``Recipe`` model."""
+    pass
+
+
+class MashPointAPIMixin(APIView):
+    """Common REST API view information for ``MashPoint`` model."""
+    serializer_class = serializers.MashPointSerializer
+    permission_classes = (IsAuthenticated, permissions.OwnsRecipe)
+    filter_fields = ('id', 'recipe',)
+
+    def get_queryset(self):
+        return models.MashPoint.objects.filter(
+            recipe__company__group__user=self.request.user).order_by('index')
+
+
+class MashPointListView(MashPointAPIMixin, generics.ListCreateAPIView):
+    """List and create REST API for ``MashPoint`` model."""
+    pass
+
+
+class MashPointDetailView(MashPointAPIMixin,
+                          generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``MashPoint`` model."""
+    pass
+
+
+class RecipeInstanceApiMixin(APIView):
+    """Common REST API view information for ``RecipeInstance`` model."""
+    serializer_class = serializers.RecipeInstanceSerializer
+    permission_classes = (IsAuthenticated, permissions.OwnsRecipe)
+    filter_fields = ('id', 'active', 'brewhouse',)
+
+    def get_queryset(self):
+        return models.RecipeInstance.objects.filter(
+            recipe__company__group__user=self.request.user)
+
+
+class RecipeInstanceListView(RecipeInstanceApiMixin,
+                             generics.ListCreateAPIView):
+    """List and Create REST API view for ``RecipeInstance`` model."""
+    pass
+
+
+class RecipeInstanceDetailView(RecipeInstanceApiMixin,
+                               generics.RetrieveUpdateAPIView):
+    """Retrieve and Update REST API view for ``RecipeInstance`` model."""
+    pass
+
+
+class TimeSeriesNewHandler(generics.CreateAPIView):
+    """Create REST API view for ``TimeSeriesDataPoint`` model."""
+    serializer_class = serializers.TimeSeriesDataPointSerializer
+    permission_classes = (IsAuthenticated, permissions.OwnsSensor)
+
+    def get_queryset(self):
+        return models.TimeSeriesDataPoint.objects.filter(
+            sensor__brewhouse__brewery__company__group__user=
+            self.request.user)
+
+
+class TimeSeriesIdentifyHandler(APIView):
+    """Identifies a time series group by the name of an AssetSensor.
+
+    Can only be handled as a POST request.
+    """
+
+    @staticmethod
+    def post(request):
+        """Identifies a time series group by the name of an AssetSensor.
+
+        If the AssetSensor does not yet exist, creates it.
+
+        Args:
+            recipe_instance: (Optional) POST argument with the 
+                recipe_instance pk. Used to retrieve the Brewhouse equipment
+                associated with the request. Used for some cases when the
+                equipment has more readily available access to the
+                recipe_instance rather than the Brewhouse directly.
+            brewhouse: (Optional): POST argument with the Brewhouse pk. Required
+                if recipe_instance is not submitted.
+            name: Name for the AssetSensor to be used in the time series data.
+                See AssetSensor for more information on naming.
+
+        Returns:
+            JsonResponse with the pk to the sensor as the property "sensor".
+            Response status is 200 if just returning object and 201 if needed to
+            create a new AssetSensor.
+        """
+        name = request.data['name']
+
+        if 'recipe_instance' in request.data:
+            recipe_instance_id = request.data['recipe_instance']
+            recipe_instance = models.RecipeInstance.objects.get(
+                id=recipe_instance_id)
+            brewhouse = recipe_instance.brewhouse
         else:
-            self.newData(parsedMessage)
-        
-    '''
-    Message helper functions
-    '''      
-    def subscribe(self,parsedMessage):
-        logging.debug('Subscribing')
-        if 'sensor' not in parsedMessage:
-            parsedMessage['sensor'] = AssetSensor.objects.get(sensor=parsedMessage['sensor'],asset=1)#TODO: programatically get asset
-            
-        key = (parsedMessage['recipe_instance'],parsedMessage['sensor'])
-        if key not in TimeSeriesSocketHandler.subscriptions: TimeSeriesSocketHandler.subscriptions[key] = set()
-        if self not in TimeSeriesSocketHandler.subscriptions[key]: #protect against double subscriptions
-            TimeSeriesSocketHandler.subscriptions[key].add(self)
-    
-    def newData(self,parsedMessage):
-        logging.debug('New data')
-        fields = ('recipe_instance','sensor','time','value',)
-        newDataPoint = {}
-        for fieldName in fields:
-            field = TimeSeriesDataPoint._meta.get_field(fieldName)
-            if field.is_relation:
-                newDataPoint[fieldName] = field.related_model.objects.get(pk=parsedMessage[fieldName])
-            else:
-                newDataPoint[fieldName] = parsedMessage[fieldName]
-        TimeSeriesDataPoint(**newDataPoint).save()
-        
-    '''
-    Cache handling helper functions
-    '''        
-    @classmethod
-    def update_cache(cls, chat):
-        cls.cache.append(chat)
-        if len(cls.cache) > cls.cache_size:
-            cls.cache = cls.cache[-cls.cache_size:]
-     
-    @classmethod
-    def send_updates(cls, newDataPoint):
-        logging.info("sending message to %d waiters", len(cls.waiters))
-        key = (newDataPoint['recipe_instance'],newDataPoint['sensor'])
-        if key in cls.subscriptions:
-            for waiter in cls.subscriptions[key]:
-                try:
-                    waiter.write_message(newDataPoint)
-                except:
-                    logging.error("Error sending message", exc_info=True)
-        
-@receiver(post_save, sender=TimeSeriesDataPoint)
-def timeSeriesWatcher(sender, instance, **kwargs):
-    fields = ('id','recipe_instance','sensor','time','value',)
-    newDataPoint = {}
-    for fieldName in fields:
-        field = instance._meta.get_field(fieldName)
-        if isinstance(field, ForeignKey):
-            newDataPoint[fieldName] = getattr(instance,fieldName).pk
-        else:
-            newDataPoint[fieldName] = getattr(instance,fieldName)
-    TimeSeriesSocketHandler.update_cache(newDataPoint)
-    TimeSeriesSocketHandler.send_updates(newDataPoint)
+            brewhouse_id = request.data['brewhouse']
+            brewhouse = models.Brewhouse.objects.get(id=brewhouse_id)
 
-class TimeSeriesNewHandler(tornado.web.RequestHandler):
-    def post(self):
-        fields = ('recipe_instance','sensor','time','value',)
-        newDataPoint = {}
-        for fieldName in fields:
-            field = TimeSeriesDataPoint._meta.get_field(fieldName)
-            if field.is_relation:
-                newDataPoint[fieldName] = field.related_model.objects.get(pk=self.get_argument(fieldName))
-            else:
-                newDataPoint[fieldName] = self.get_body_argument(fieldName)
-                if newDataPoint[fieldName] == 'true': newDataPoint[fieldName] = True
-                if newDataPoint[fieldName] == 'false': newDataPoint[fieldName] = False
-        logging.debug(newDataPoint)
-        TimeSeriesDataPoint(**newDataPoint).save()
+        if not permissions.is_member_of_brewing_company(
+                request.user, brewhouse.brewery.company):
+            return HttpResponseForbidden(
+                'Access not permitted to brewing equipment.')
 
-class TimeSeriesIdentifyHandler(tornado.web.RequestHandler):
-    def post(self):
-        try:#see if we can ge an existing AssetSensor
-            sensor = AssetSensor.objects.get(name=self.get_argument('name'),asset=Asset.objects.get(id=1))#TODO: programatically get asset
-        except ObjectDoesNotExist as e: #otherwise create one for recording data
-            logging.debug('Creating new asset sensor {} for asset {}'.format(self.get_argument('name'),1))
-            sensor = AssetSensor(name=self.get_argument('name'),asset=Asset.objects.get(id=1))#TODO: programatically get asset
+        # See if we can get an existing AssetSensor.
+        try:
+            sensor = models.AssetSensor.objects.get(name=name,
+                                                    brewhouse=brewhouse)
+            status_code = status.HTTP_200_OK
+        # Otherwise create one for recording data
+        except ObjectDoesNotExist:
+            LOGGER.debug('Creating new asset sensor %s for asset %s',
+                         name, brewhouse)
+            sensor = models.AssetSensor(name=name, brewhouse=brewhouse)
             sensor.save()
-        self.write({'sensor':sensor.pk})
-        self.finish()
+            status_code = status.HTTP_201_CREATED
+
+        response = JsonResponse({'sensor': sensor.pk})
+        response.status_code = status_code
+        return response
+
+
+@login_required  
+def launch_recipe_instance(request):
+    """Starts a RecipeInstance on a given Brewhouse.
+
+    Must be submitted as a POST request.
+
+    Args:
+        recipe: POST argument for the recipe to run on the Brewhouse
+        brewhouse: POST argument for the Brewhouse to launch the recipe on.
+
+    Raises:
+        HttpResponseNotAllowed: if the request is not submitted as POST.
+        HttpResponseForbidden: if the user is not associated with the
+            BrewingCompany that owns the Brewhouse requested.
+        HttpResponseBadRequest: if the brewery is already active.
+    Returns:
+        JsonResponse if the brewhouse is successfully activated. Contains the pk
+        to the newly instantiated instance as property "recipe_instance".
+    """
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    data = json_decode(request.body)
+    recipe = models.Recipe.objects.get(pk=data['recipe'])
+    brewhouse = models.Brewhouse.objects.get(pk=data['brewhouse'])
+    brewery = brewhouse.brewery
+
+    if not permissions.is_member_of_brewing_company(request.user,
+                                                    brewery.company):
+        return HttpResponseForbidden(
+            'Access not permitted to brewing equipment.')
+
+    active_recipe_count = models.RecipeInstance.objects.filter(
+        brewhouse=brewhouse, active=True).count()
+    if active_recipe_count != 0:
+        return HttpResponseBadRequest('Brewery is already active')
+
+    else:
+        new_instance = models.RecipeInstance(
+            recipe=recipe, brewhouse=brewhouse, active=True)
+        new_instance.save()
+        return JsonResponse({'recipe_instance': new_instance.pk})
+
+
+@login_required  
+def end_recipe_instance(request):
+    """Stops an already running RecipeInstance.
+
+    Must be submitted as a POST request.
+
+    Args:
+        recipe_instance: POST argument for the recipe_instance currently running
+            on equipment.
+
+    Raises:
+        HttpResponseNotAllowed: if the request is not submitted as POST.
+        HttpResponseForbidden: if the user is not associated with the
+            BrewingCompany that owns the Brewhouse associated with the
+            recipe_instance.
+        HttpResponseBadRequest: if the recipe_instance is not active.
+    Returns:
+        JsonResponse if the brewhouse is successfully deactivated. Response is
+        an empty Json object.
+    """
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    data = json_decode(request.body)
+    recipe_instance = models.RecipeInstance.objects.get(
+        pk=data['recipe_instance'])
+    brewhouse = recipe_instance.brewhouse
+    brewery = brewhouse.brewery
+
+    if not permissions.is_member_of_brewing_company(
+            request.user, brewery.company):
+        return HttpResponseForbidden(
+            'Access not permitted to brewing equipment.')
+
+    if not recipe_instance.active:
+        return HttpResponseBadRequest(
+            'Recipe instance requested was not an active instance.')
+
+    recipe_instance.active = False
+    recipe_instance.save()
+
+    return JsonResponse({})

@@ -34,6 +34,13 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
+#eclipse p=files
+*.project
+*.pydevproject
+
+#django setup
+static/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -86,3 +93,25 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+#eclipse project files
+.settings/
+.project
+.cproject
+.pydevproject
+
+
+# Elastic Beanstalk Files
+
+.elasticbeanstalk/
+
+#Bower
+components/
+bower_components/
+
+# PyCharm
+.idea/
+
+# Local database file
+db.sqlite
+
