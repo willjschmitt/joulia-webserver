@@ -22,4 +22,12 @@ script:
 after_success: coveralls
 notifications:
   email: false
-  slack: joulia:WNFyeuBeiJJAGjU6Gwj9rPnX
+  slack: $SLACK_TOKEN
+deploy:
+  provider: elasticbeanstalk
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  region: "us-east-1"  
+  app: "joulia-webserver"
+  env: "joulia-webserver-prod"
+  bucket_name: "joulia-webserver-builds"
