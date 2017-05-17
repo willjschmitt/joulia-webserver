@@ -15,8 +15,9 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^brewery/', include('brewery.urls')),
     url(r'^auth/', include('auth.urls')),
+    url(r'^', include('tornado_sockets.urls')),
 
     url('', include('social_django.urls', namespace='social')),
     url(r'^login/google-oauth2/$', social_views.auth,
         name='login-google-oauth2')
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]
