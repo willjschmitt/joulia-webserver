@@ -6,17 +6,22 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.views.generic import TemplateView
-
 import social_django.views as social_views
+
+import brewery.views as brewery_views
 
 urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name="index.html")),
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^admin/', admin.site.urls),
-    url('^', include('brewery.urls')),
-    url('^', include('auth.urls')),
+    url(r'^brewery/', include('brewery.urls')),
+    url(r'^auth/', include('auth.urls')),
+
+    url(r"live/timeseries/new/$", brewery_views.TimeSeriesNewHandler.as_view()),
+    url(r"live/timeseries/identify/$",
+        brewery_views.TimeSeriesIdentifyHandler.as_view()),
 
     url('', include('social_django.urls', namespace='social')),
     url(r'^login/google-oauth2/$', social_views.auth,
         name='login-google-oauth2')
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]

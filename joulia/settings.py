@@ -24,6 +24,7 @@ ALLOWED_HOSTS = [
     'joulia.io',
     'www.joulia.io',
     'localhost',
+    '[::1]',
 ]
 
 # TODO(willjschmitt): SSL related settings we should enforce.
