@@ -1,4 +1,4 @@
-FROM python:2.7
+FROM python:3.5
 MAINTAINER William Schmitt (william@wschmitt.com)
 
 RUN apt-get update
