@@ -13,8 +13,8 @@ urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name="index.html")),
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^admin/', admin.site.urls),
-    url('^', include('brewery.urls')),
-    url('^', include('auth.urls')),
+    url(r'^brewery/', include('brewery.urls')),
+    url(r'^auth/', include('auth.urls')),
 
     url('', include('social_django.urls', namespace='social')),
     url(r'^login/google-oauth2/$', social_views.auth,
