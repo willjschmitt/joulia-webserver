@@ -15,7 +15,7 @@ else:
 
 # TODO(willjschmitt): Remove this key when we go live.
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'w61u$@)p7vl=o2zp6_beqhy)h84-(--v%ytz!x(!fdp5+k3j##'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'fake-key-needs-to-be-set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = not PRODUCTION_HOST
