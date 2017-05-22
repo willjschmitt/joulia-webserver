@@ -6,7 +6,7 @@ import socket
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-if socket.gethostname() == "joulia.io":
+if "joulia" in socket.gethostname():
     PRODUCTION_HOST = True
 else:
     PRODUCTION_HOST = False
