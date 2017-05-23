@@ -3,7 +3,9 @@
 
 import datetime
 from django.contrib.auth.models import Group
+from django.contrib.auth.models import User
 from django.test import TestCase
+from rest_framework.authtoken.models import Token
 
 from brewery import models
 
@@ -71,6 +73,96 @@ class BrewhouseTest(TestCase):
         models.RecipeInstance.objects.create(
             recipe=recipe, brewhouse=brewhouse, active=False)
         self.assertIsNone(brewhouse.active_recipe_instance)
+
+    def test_save_user_and_token_good(self):
+        group = Group.objects.create(name="Foo")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group)
+        token = Token.objects.create(user=user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse(brewery=brewery, name="Baz", user=user,
+                                     token=token)
+        user_count_start = User.objects.count()
+        token_count_start = Token.objects.count()
+
+        brewhouse.save()
+        self.assertEquals(User.objects.count(), user_count_start)
+        self.assertEquals(Token.objects.count(), token_count_start)
+
+    def test_save_token_does_not_exist(self):
+        group = Group.objects.create(name="Foo")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse(brewery=brewery, name="Baz", user=user)
+        user_count_start = User.objects.count()
+        token_count_start = Token.objects.count()
+
+        brewhouse.save()
+        self.assertEquals(User.objects.count(), user_count_start)
+        self.assertEquals(Token.objects.count(), token_count_start + 1)
+        self.assertEquals(brewhouse.token.user, user)
+
+    def test_save_user_does_not_exist(self):
+        group = Group.objects.create(name="Foo")
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse(brewery=brewery, name="Baz")
+        user_count_start = User.objects.count()
+        token_count_start = Token.objects.count()
+
+        brewhouse.save()
+        self.assertEquals(User.objects.count(), user_count_start + 1)
+        self.assertEquals(Token.objects.count(), token_count_start + 1)
+        self.assertIn(brewhouse.user, brewing_company.group.user_set.all())
+
+    def test_save_user_bad_group_count(self):
+        group = Group.objects.create(name="Foo")
+        group_bad = Group.objects.create(name="bad")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group)
+        user.groups.add(group_bad)
+        token = Token.objects.create(user=user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse(brewery=brewery, name="Baz", user=user,
+                                     token=token)
+        with self.assertRaises(models.InvalidUserError):
+            brewhouse.save()
+
+    def test_save_user_in_wrong_group(self):
+        group = Group.objects.create(name="Foo")
+        group_bad = Group.objects.create(name="bad")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group_bad)
+        token = Token.objects.create(user=user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse(brewery=brewery, name="Baz", user=user,
+                                     token=token)
+        with self.assertRaises(models.InvalidUserError):
+            brewhouse.save()
+
+    def test_save_token_for_wrong_user(self):
+        group = Group.objects.create(name="Foo")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group)
+        user_bad = User.objects.create(username="bad-user")
+        token = Token.objects.create(user=user_bad)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse(brewery=brewery, name="Baz", user=user,
+                                     token=token)
+        with self.assertRaises(models.InvalidUserError):
+            brewhouse.save()
 
     def test_str(self):
         brewery = models.Brewery.objects.create(name="Foo")
