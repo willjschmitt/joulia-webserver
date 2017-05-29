@@ -1,8 +1,8 @@
 """Provides testing base class for use throughout the site."""
 
 from django.test import TestCase
-
-from testing.fake_session_backend import SessionStore
+from rest_framework.authtoken.models import Token
+from unittest.mock import Mock
 
 
 class JouliaTestCase(TestCase):
@@ -10,12 +10,15 @@ class JouliaTestCase(TestCase):
     RequestHandler's.
     """
 
-    # TODO(willjschmitt): Consider if the DRF force_login could support this
-    # without client usage.
-    @staticmethod
-    def force_tornado_login(user):
-        store = SessionStore()
-        store['_auth_user_id'] = user.pk
-        store['_auth_user_backend'] = (
-            'testing.fake_model_backend.NoHashModelBackend')
-        store.save()
+    def setUp(self):
+        super(JouliaTestCase, self).setUp()
+        self.app = Mock()
+        self.app.ui_methods = {}
+        self.request = Mock()
+        self.request.headers = {}
+        self.request.cookies = {}
+        self.request.arguments = {}
+
+    def force_tornado_login(self, user):
+        token = Token.objects.create(user=user)
+        self.request.headers["Authorization"] = "Token {}".format(token.key)
