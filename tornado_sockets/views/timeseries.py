@@ -17,13 +17,12 @@ from brewery.models import AssetSensor
 from brewery.models import RecipeInstance
 from brewery.models import TimeSeriesDataPoint
 from brewery.serializers import TimeSeriesDataPointSerializer
-from tornado_sockets.views.django import DjangoAuthenticatedRequestHandler
+from tornado_sockets.views.django import DjangoAuthenticatedWebSocketHandler
 
 LOGGER = logging.getLogger(__name__)
 
 
-class TimeSeriesSocketHandler(tornado.websocket.WebSocketHandler,
-                              DjangoAuthenticatedRequestHandler):
+class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
     """A websocket request handler/connection used for a two-way connection
     for streaming sensor data between a client and the webserver. Allows
     for real-time streaming of sensor data as soon as it is posted.

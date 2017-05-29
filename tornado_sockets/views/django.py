@@ -2,10 +2,14 @@
 like authentication.
 """
 
+from django.conf import settings
+from django.contrib.auth import get_user
+from django.http.request import HttpRequest
+from importlib import import_module
+from rest_framework.request import Request
 from rest_framework.settings import api_settings
 from tornado.web import RequestHandler
-
-from tornado_sockets.utils import get_current_user
+from tornado.websocket import WebSocketHandler
 
 
 class DjangoAuthenticatedRequestHandler(RequestHandler):
@@ -17,42 +21,54 @@ class DjangoAuthenticatedRequestHandler(RequestHandler):
     authentication_classes = api_settings.DEFAULT_AUTHENTICATION_CLASSES
 
     def get_current_user(self):
-        """Gets current user from Django site for use in Tornado views."""
-        return get_current_user(self)
-    # TODO(wschmitt): Extend this with token authentication using code similar
-    # to below possibly.
-    # def get_current_user(self):
-    #     """Gets the current user using the django rest framework
-    #     `authentication_classes`. The classes default to those from the
-    #     settings, but can always be overridden in child classes.
-    #     """
-    #     print("yooooo")
-    #     authenticators = (auth() for auth in self.authentication_classes)
-    #     self.auth = None
-    #     for authenticator in authenticators:
-    #         try:
-    #             user_auth_tuple = authenticator.authenticate(self)
-    #         except:
-    #             pass
-    #
-    #         if user_auth_tuple is not None:
-    #             self._authenticator = authenticator
-    #             user = user_auth_tuple[0]
-    #             self.auth = user_auth_tuple[1]
-    #             return user
-
-    @property
-    def META(self):
-        """Mocks a conversion of the tornado headers into django headers, since
-        tornado doesn't have really middleware that manipulates the incoming
-        headers. Particularly, this function takes the "Authorization" header
-        incoming from tornado and returns a dictionary with "HTTP_AUTHORIZATION"
-        containing the same value.
+        """Overrides to get the currently logged user from django into tornado
+        views.
         """
-        tornado_auth_header = self.request.headers['Authorization']
-        headers = {'HTTP_AUTHORIZATION': tornado_auth_header}
-        return headers
+        django_request = DjangoMockedRequest(self)
+        django_request.user = get_user(django_request)
+        authenticators = (auth() for auth in self.authentication_classes)
+        rest_framework_request = Request(django_request,
+                                         authenticators=authenticators)
+        return rest_framework_request.user
 
-    @property
-    def _request(self):
-        return self
+
+class DjangoAuthenticatedWebSocketHandler(DjangoAuthenticatedRequestHandler,
+                                          WebSocketHandler):
+    """Wraps DjangoAuthenticatedRequestHandler for websocket authentication."""
+    pass
+
+
+class DjangoMockedRequest(HttpRequest):
+    """A Django HttpRequest with the correct settings applied to it as if it
+    were created by a WSGI request directly.
+    """
+
+    def __init__(self, tornado_request):
+        super(DjangoMockedRequest, self).__init__()
+        self._tornado_view = tornado_request
+
+        self.method = self._tornado_view.request.method
+        self._set_session()
+        self._set_cookies()
+        self._configure_headers()
+
+    def _set_session(self):
+        engine = import_module(settings.SESSION_ENGINE)
+        session_cookie_name = settings.SESSION_COOKIE_NAME
+        session_key = str(self._tornado_view.get_cookie(session_cookie_name))
+        self.session = engine.SessionStore(session_key)
+
+    def _set_cookies(self):
+        cookies_to_set = ("csrftoken", "sessionid",)
+        for cookie_to_set in cookies_to_set:
+            self.COOKIES[cookie_to_set] = str(
+                self._tornado_view.get_cookie(cookie_to_set))
+
+    def _configure_headers(self):
+        header_conversions = ("AUTHORIZATION", "X_CSRFTOKEN",)
+        for header_name, header in self._tornado_view.request.headers.items():
+            sanitized = header_name.replace("-", "_").upper()
+            if sanitized in header_conversions:
+                new_header_name = "HTTP_{}".format(sanitized)
+                header = self._tornado_view.request.headers[header_name]
+                self.META[new_header_name] = header

@@ -1,6 +1,5 @@
 """Test for the tornado_sockets.views.recipe_instance module."""
 
-from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from rest_framework import status
@@ -9,14 +8,12 @@ from tornado.concurrent import Future
 from tornado.escape import utf8
 from tornado.ioloop import IOLoop
 from unittest.mock import MagicMock
-from unittest.mock import Mock
 
 from brewery.models import Brewery
 from brewery.models import Brewhouse
 from brewery.models import BrewingCompany
 from brewery.models import Recipe
 from brewery.models import RecipeInstance
-from testing.fake_session_backend import test_with_fake_session_backend
 from testing.test import JouliaTestCase
 from tornado_sockets.views import recipe_instance
 
@@ -25,20 +22,15 @@ class TestRecipeInstanceHandler(JouliaTestCase):
     """Tests for the RecipeInstanceHandler class."""
 
     def setUp(self):
-        self.app = Mock()
-        self.app.ui_methods = {}
-        self.request = Mock()
-        cookie = Mock(value="abcdefg")
-        self.request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
-        self.request.arguments = {}
+        super(TestRecipeInstanceHandler, self).setUp()
         self.handler = recipe_instance.RecipeInstanceHandler(self.app,
                                                              self.request)
 
-    @test_with_fake_session_backend
     def test_post_success(self):
         class RecipeInstanceHandlerImplementer(
                 recipe_instance.RecipeInstanceHandler):
             waiters = {}
+
             def handle_request(self):
                 self.future.set_result({"fake": "result"})
 
@@ -56,10 +48,9 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         IOLoop.current().run_sync(handler.post)
         self.assertIn(b'{"fake": "result"}', handler._write_buffer)
 
-    @test_with_fake_session_backend
     def test_post_poller_disconnects(self):
         class RecipeInstanceHandlerImplementer(
-            recipe_instance.RecipeInstanceHandler):
+                recipe_instance.RecipeInstanceHandler):
             waiters = {}
 
             def handle_request(self):
@@ -81,7 +72,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
 
     def test_post_no_auth_not_ok_to_proceed(self):
         class RecipeInstanceHandlerImplementer(
-            recipe_instance.RecipeInstanceHandler):
+                recipe_instance.RecipeInstanceHandler):
             waiters = {}
 
             def handle_request(self):
@@ -138,7 +129,6 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         self.assertEquals(
             recipe_instance.RecipeInstanceHandler.waiters[brewhouse.pk], [])
 
-    @test_with_fake_session_backend
     def test_has_permission_is_member(self):
         group = Group.objects.create(name="Baz")
         user = User.objects.create(username="john_doe")
@@ -190,7 +180,6 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         self.handler.register_waiter()
         self.assertEquals(self.handler.waiters[brewhouse], {future})
 
-    @test_with_fake_session_backend
     def test_get_and_check_permission(self):
         group = Group.objects.create(name="Baz")
         user = User.objects.create(username="john_doe")
@@ -202,7 +191,6 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
         self.assertTrue(self.handler.get_and_check_permission())
 
-    @test_with_fake_session_backend
     def test_get_and_check_permission_no_brewhouse(self):
         group = Group.objects.create(name="Baz")
         user = User.objects.create(username="john_doe")
@@ -226,17 +214,12 @@ class TestRecipeInstanceStartHandler(JouliaTestCase):
     """Tests for the RecipeInstanceStartHandler."""
 
     def setUp(self):
-        app = Mock()
-        app.ui_methods = {}
-        request = Mock()
-        cookie = Mock(value="abcdefg")
-        request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
-        request.arguments = {}
-        self.handler = recipe_instance.RecipeInstanceStartHandler(app, request)
+        super(TestRecipeInstanceStartHandler, self).setUp()
+        self.handler = recipe_instance.RecipeInstanceStartHandler(self.app,
+                                                                  self.request)
         self.handler.request.connection.stream.closed = MagicMock(
             return_value=False)
 
-    @test_with_fake_session_backend
     def test_active_returns_instance(self):
         group = Group.objects.create(name="Baz")
         user = User.objects.create(username="john_doe")
@@ -255,7 +238,6 @@ class TestRecipeInstanceStartHandler(JouliaTestCase):
         self.assertIn(utf8('{{"recipe_instance": {}}}'.format(instance.pk)),
                       self.handler._write_buffer)
 
-    @test_with_fake_session_backend
     def test_inactive_waits_and_returns_new_instance(self):
         group = Group.objects.create(name="Baz")
         user = User.objects.create(username="john_doe")
@@ -290,17 +272,12 @@ class TestRecipeInstanceEndHandler(JouliaTestCase):
     """Tests for the RecipeInstanceEndHandler."""
 
     def setUp(self):
-        app = Mock()
-        app.ui_methods = {}
-        request = Mock()
-        cookie = Mock(value="abcdefg")
-        request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
-        request.arguments = {}
-        self.handler = recipe_instance.RecipeInstanceEndHandler(app, request)
+        super(TestRecipeInstanceEndHandler, self).setUp()
+        self.handler = recipe_instance.RecipeInstanceEndHandler(self.app,
+                                                                self.request)
         self.handler.request.connection.stream.closed = MagicMock(
             return_value=False)
 
-    @test_with_fake_session_backend
     def test_inactive_returns_none(self):
         group = Group.objects.create(name="Baz")
         user = User.objects.create(username="john_doe")
