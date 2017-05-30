@@ -43,7 +43,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
 
         handler = RecipeInstanceHandlerImplementer(self.app, self.request)
-        handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         handler.request.connection.stream.closed = MagicMock(return_value=False)
         IOLoop.current().run_sync(handler.post)
         self.assertIn(b'{"fake": "result"}', handler._write_buffer)
@@ -65,7 +65,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
 
         handler = RecipeInstanceHandlerImplementer(self.app, self.request)
-        handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         handler.request.connection.stream.closed = MagicMock(return_value=True)
         IOLoop.current().run_sync(handler.post)
         self.assertEquals(handler._write_buffer, [])
@@ -81,7 +81,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         brewhouse = Brewhouse.objects.create(name="Bar")
 
         handler = RecipeInstanceHandlerImplementer(self.app, self.request)
-        handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         handler.request.connection.stream.closed = MagicMock(return_value=False)
         IOLoop.current().run_sync(handler.post)
         self.assertEquals(handler._write_buffer, [])
@@ -149,7 +149,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
 
     def test_get_brewhouse_successfully(self):
         brewhouse = Brewhouse.objects.create(name="Foo")
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         brewhouse_found = self.handler.get_brewhouse()
         self.assertTrue(brewhouse_found)
         self.assertEquals(self.handler.brewhouse, brewhouse)
@@ -157,7 +157,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
 
     def test_get_brewhouse_does_not_exist(self):
         brewhouse = Brewhouse.objects.create(name="Foo")
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk + 1)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk + 1)
         brewhouse_found = self.handler.get_brewhouse()
         self.assertFalse(brewhouse_found)
         self.assertIsNone(self.handler.brewhouse)
@@ -188,7 +188,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         brewing_company = BrewingCompany.objects.create(group=group)
         brewery = Brewery.objects.create(name="Foo", company=brewing_company)
         brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         self.assertTrue(self.handler.get_and_check_permission())
 
     def test_get_and_check_permission_no_brewhouse(self):
@@ -199,13 +199,13 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         brewing_company = BrewingCompany.objects.create(group=group)
         brewery = Brewery.objects.create(name="Foo", company=brewing_company)
         brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk + 1)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk + 1)
         self.assertFalse(self.handler.get_and_check_permission())
         self.assertEquals(self.handler._status_code, status.HTTP_404_NOT_FOUND)
 
     def test_get_and_check_permission_not_logged_in(self):
         brewhouse = Brewhouse.objects.create(name="Bar")
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         self.assertFalse(self.handler.get_and_check_permission())
         self.assertEquals(self.handler._status_code, status.HTTP_403_FORBIDDEN)
 
@@ -233,7 +233,7 @@ class TestRecipeInstanceStartHandler(JouliaTestCase):
         instance = RecipeInstance.objects.create(recipe=recipe, active=True,
                                                  brewhouse=brewhouse)
 
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         IOLoop.current().run_sync(self.handler.post)
         self.assertIn(utf8('{{"recipe_instance": {}}}'.format(instance.pk)),
                       self.handler._write_buffer)
@@ -249,7 +249,7 @@ class TestRecipeInstanceStartHandler(JouliaTestCase):
         brewhouse = Brewhouse.objects.create(name="Bar", brewery=brewery)
         recipe = Recipe.objects.create(name="Baz")
 
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         instance = RecipeInstance.objects.create(recipe=recipe, active=False,
                                                  brewhouse=brewhouse)
 
@@ -291,7 +291,7 @@ class TestRecipeInstanceEndHandler(JouliaTestCase):
         RecipeInstance.objects.create(recipe=recipe, active=False,
                                       brewhouse=brewhouse)
 
-        self.handler.request.arguments["brewhouse"] = str(brewhouse.pk)
+        self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         IOLoop.current().run_sync(self.handler.post, timeout=2.0)
         self.assertIn(b'{"recipe_instance": null}', self.handler._write_buffer)
 

@@ -122,7 +122,7 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
         """Attempts to set `brewhouse` attribute based on the provided argument.
         If not found, sets the status as a 404 and returns False. If found,
         returns True and sets `brewhouse`."""
-        brewhouse_pk = self.get_argument('brewhouse')
+        brewhouse_pk = self.get_body_argument('brewhouse')
         try:
             self.brewhouse = Brewhouse.objects.get(pk=brewhouse_pk)
         except ObjectDoesNotExist:
