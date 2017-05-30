@@ -34,6 +34,7 @@ class DjangoAuthenticatedRequestHandler(RequestHandler):
                                          authenticators=authenticators)
         user = rest_framework_request.user
         LOGGER.info(user)
+        LOGGER.info(self.request.headers)
         return user
 
 
