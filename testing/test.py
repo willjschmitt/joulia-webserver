@@ -18,6 +18,7 @@ class JouliaTestCase(TestCase):
         self.request.headers = {}
         self.request.cookies = {}
         self.request.arguments = {}
+        self.request.body_arguments = {}
 
     def force_tornado_login(self, user):
         token = Token.objects.create(user=user)
