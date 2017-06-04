@@ -2,18 +2,14 @@
 """
 # pylint: disable=too-many-ancestors
 
-from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
-from django.http import HttpResponseNotAllowed
 from django.http import JsonResponse
 import logging
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from tornado.escape import json_decode
 
 from brewery import models
 from brewery import permissions
@@ -230,3 +226,16 @@ class TimeSeriesIdentifyHandler(APIView):
         response = JsonResponse({'sensor': sensor.pk})
         response.status_code = status_code
         return response
+
+
+class BrewhouseIdByToken(APIView):
+    """Retrieves the brewhouse ID for a user authenticated with a Token."""
+
+    @staticmethod
+    def get(request):
+        if not hasattr(request.user, 'token'):
+            return HttpResponseForbidden()
+        if not hasattr(request.user.token, 'brewhouse'):
+            return HttpResponseForbidden()
+
+        return JsonResponse({'brewhouse': request.user.token.brewhouse.pk})

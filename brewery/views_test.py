@@ -6,6 +6,7 @@ from django.test import Client
 from django.test import TestCase
 import json
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from unittest.mock import Mock
 
 from brewery import models
@@ -214,3 +215,27 @@ class TimeSeriesIdentifyHandlerTest(BreweryTestBase):
                         'name': "nonexisting_sensor"}
         response = views.TimeSeriesIdentifyHandler.post(request)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class BrewhouseIdByTokenTest(TestCase):
+    def test_no_token(self):
+        user = User.objects.create()
+        request = Mock(user=user)
+        response = views.BrewhouseIdByToken.get(request)
+        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_no_brewhouse(self):
+        user = User.objects.create()
+        Token.objects.create(user=user)
+        request = Mock(user=user)
+        response = views.BrewhouseIdByToken.get(request)
+        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_has_token_correctly(self):
+        group = Group.objects.create(name="A Brewing Company")
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+        request = Mock(user=brewhouse.token.user)
+        response = views.BrewhouseIdByToken.get(request)
+        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
