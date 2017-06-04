@@ -22,4 +22,6 @@ urlpatterns = [
     url(r"api/recipeInstance/$", views.RecipeInstanceListView.as_view()),
     url(r"api/recipeInstance/(?P<pk>[0-9]+)/$",
         views.RecipeInstanceDetailView.as_view()),
+
+    url(r"api/brewhouse_from_token/$", views.BrewhouseIdByToken.as_view()),
 ]
