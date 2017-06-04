@@ -5,17 +5,8 @@ headers of a request for debugging things like authentication behind proxies.
 import re
 from http.client import responses
 import logging
-from django.conf import settings
 
-req_handler = logging.FileHandler(settings.HOME_DIR + '/logs/requests.log')
-req_handler.setLevel(logging.INFO)
-
-formatter = logging.Formatter('[%(asctime)s] %(message)s')
-req_handler.setFormatter(formatter)
-
-req_log = logging.getLogger('requests')
-req_log.propagate = False
-req_log.addHandler(req_handler)
+req_log = logging.getLogger(__name__)
 
 
 def log_cond(request):
