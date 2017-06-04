@@ -6,10 +6,9 @@ import socket
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-if "joulia" in socket.gethostname():
-    PRODUCTION_HOST = True
-else:
-    PRODUCTION_HOST = False
+PRODUCTION_HOST = ("joulia" in socket.gethostname())
+TRAVIS = os.environ.get('TRAVIS') == "true"
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
@@ -174,6 +173,9 @@ REST_FRAMEWORK = {
     'COERCE_DECIMAL_TO_STRING': False,
 }
 
+JOULIA_LOG_FILE = os.path.join(BASE_DIR, 'joulia.log')
+if not TRAVIS and PRODUCTION_HOST:
+    JOULIA_LOG_FILE = '/var/log/joulia.log'
 
 LOGGING = {
     'version': 1,
@@ -182,7 +184,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/var/log/joulia.log',
+            'filename': JOULIA_LOG_FILE,
         },
     },
     'loggers': {

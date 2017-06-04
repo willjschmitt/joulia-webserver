@@ -16,8 +16,6 @@ install:
   - travis_retry pip install coveralls
 before_script:
   - mysql -e 'create database joule'
-  - sudo touch /var/log/joulia.log
-  - sudo chown travis /var/log/joulia.log
 
 script: 
 - python manage.py test --pattern="*test*.py"
