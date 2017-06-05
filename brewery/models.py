@@ -75,8 +75,8 @@ class Brewhouse(models.Model):
     name = models.CharField(max_length=64)
     brewery = models.ForeignKey(Brewery, null=True)
 
-    token = models.ForeignKey(Token, null=True)
-    user = models.ForeignKey(User, null=True)
+    token = models.OneToOneField(Token, null=True)
+    user = models.OneToOneField(User, null=True)
 
     @property
     def active(self):

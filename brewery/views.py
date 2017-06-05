@@ -233,9 +233,8 @@ class BrewhouseIdByToken(APIView):
 
     @staticmethod
     def get(request):
-        if not hasattr(request.user, 'token'):
+        try:
+            brewhouse = request.user.auth_token.brewhouse
+            return JsonResponse({'brewhouse': brewhouse.pk})
+        except ObjectDoesNotExist:
             return HttpResponseForbidden()
-        if not hasattr(request.user.token, 'brewhouse'):
-            return HttpResponseForbidden()
-
-        return JsonResponse({'brewhouse': request.user.token.brewhouse.pk})

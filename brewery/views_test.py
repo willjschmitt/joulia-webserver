@@ -238,4 +238,6 @@ class BrewhouseIdByTokenTest(TestCase):
         brewhouse = models.Brewhouse.objects.create(brewery=brewery)
         request = Mock(user=brewhouse.token.user)
         response = views.BrewhouseIdByToken.get(request)
-        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEquals(json.loads(response.content.decode())['brewhouse'],
+                          brewhouse.pk)
