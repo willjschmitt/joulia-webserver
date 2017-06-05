@@ -24,6 +24,7 @@ ALLOWED_HOSTS = [
     'joulia.io',
     'www.joulia.io',
     'localhost',
+    '127.0.0.1',
     '[::1]',
 ]
 
