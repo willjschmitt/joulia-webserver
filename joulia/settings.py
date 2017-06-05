@@ -7,7 +7,7 @@ import socket
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PRODUCTION_HOST = ('joulia' in socket.gethostname()
-                   or os.environ.get('JOULA_PRODUCTION', 'false') == 'true')
+                   or os.environ.get('JOULIA_PRODUCTION', 'false') == 'true')
 TRAVIS = os.environ.get('TRAVIS', 'false') == 'true'
 
 # Quick-start development settings - unsuitable for production
