@@ -188,11 +188,10 @@ LOGGING = {
             'filename': JOULIA_LOG_FILE,
         },
     },
-    'loggers': {
-        'root': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+    'loggers': {},
+    'root': {
+        'handlers': ['file'],
+        'level': 'DEBUG',
+        'propagate': True,
     },
 }
