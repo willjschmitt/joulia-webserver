@@ -18,7 +18,7 @@ TRAVIS = os.environ.get('TRAVIS', 'false') == 'true'
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'fake-key-needs-to-be-set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = not PRODUCTION_HOST
+DEBUG = True  # not PRODUCTION_HOST
 
 ALLOWED_HOSTS = [
     'joulia.io',
