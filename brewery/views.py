@@ -3,6 +3,8 @@
 # pylint: disable=too-many-ancestors
 
 from django.core.exceptions import ObjectDoesNotExist
+
+from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.http import JsonResponse
 import logging
@@ -14,6 +16,7 @@ from rest_framework.views import APIView
 from brewery import models
 from brewery import permissions
 from brewery import serializers
+from joulia import http
 
 
 LOGGER = logging.getLogger(__name__)
@@ -238,3 +241,46 @@ class BrewhouseIdByToken(APIView):
             return JsonResponse({'brewhouse': brewhouse.pk})
         except ObjectDoesNotExist:
             return HttpResponseForbidden()
+
+
+class BrewhouseLaunchView(APIView):
+    """Launches a recipe instance on a Brewhouse."""
+
+    @staticmethod
+    def post(request):
+        brewhouse_pk = http.get_post_value_or_400(request, 'brewhouse')
+        recipe_pk = http.get_post_value_or_400(request, 'recipe')
+
+        brewhouse = http.get_object_or_404(models.Brewhouse, brewhouse_pk)
+        if not permissions.IsMemberOfBrewery().has_object_permission(
+                request, None, brewhouse):
+            raise http.HTTP403("No permission to access requested brewhouse.")
+        recipe = http.get_object_or_404(models.Recipe, recipe_pk)
+        if not permissions.IsMemberOfBrewingCompany().has_object_permission(
+                request, None, recipe):
+            raise http.HTTP403("No permission to access requested recipe.")
+
+        recipe_instance = models.RecipeInstance.objects.create(
+            brewhouse=brewhouse, recipe=recipe, active=True)
+
+        return JsonResponse({"id": recipe_instance.pk})
+
+
+class BrewhouseEndView(APIView):
+    """Ends a recipe instance on a Brewhouse."""
+
+    @staticmethod
+    def post(request):
+        recipe_instance_pk = http.get_post_value_or_400(request,
+                                                        'recipe_instance')
+        recipe_instance = http.get_object_or_404(models.RecipeInstance,
+                                                 recipe_instance_pk)
+
+        if not permissions.OwnsRecipe().has_object_permission(
+                request, None, recipe_instance):
+            raise http.HTTP403(
+                "No permission to access requested recipe_instance.")
+
+        recipe_instance.active = False
+        recipe_instance.save()
+        return HttpResponse()

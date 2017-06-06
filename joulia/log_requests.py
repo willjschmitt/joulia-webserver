@@ -9,8 +9,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class HeadersLoggingMiddleware(object):
-    @staticmethod
-    def process_response(request, response):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
         try:
             status_text = responses[response.status_code]
         except KeyError:
