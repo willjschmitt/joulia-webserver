@@ -248,8 +248,8 @@ class BrewhouseLaunchView(APIView):
 
     @staticmethod
     def post(request):
-        brewhouse_pk = http.get_post_value_or_400(request, 'brewhouse')
-        recipe_pk = http.get_post_value_or_400(request, 'recipe')
+        brewhouse_pk = http.get_data_value_or_400(request, 'brewhouse')
+        recipe_pk = http.get_data_value_or_400(request, 'recipe')
 
         brewhouse = http.get_object_or_404(models.Brewhouse, brewhouse_pk)
         if not permissions.IsMemberOfBrewery().has_object_permission(
@@ -271,7 +271,7 @@ class BrewhouseEndView(APIView):
 
     @staticmethod
     def post(request):
-        recipe_instance_pk = http.get_post_value_or_400(request,
+        recipe_instance_pk = http.get_data_value_or_400(request,
                                                         'recipe_instance')
         recipe_instance = http.get_object_or_404(models.RecipeInstance,
                                                  recipe_instance_pk)

@@ -19,23 +19,23 @@ class HTTP404(Exception):
     pass
 
 
-def get_post_value_or_400(request, key):
-    """Gets the value for a post key if it exists. If it does not, raises
+def get_data_value_or_400(request, key):
+    """Gets the value for a data key if it exists. If it does not, raises
     Http400.
 
     Args:
-        request: Django request with POST data in it.
-        key: Post key for a value in the request.POST.
+        request: Django request with data in it.
+        key: Post key for a value in the request.data.
 
     Returns:
-        value for the key in the request.POST data.
+        value for the key in the request.data data.
 
     Raises:
-        Http400: if the key is not in the POST data.
+        Http400: if the key is not in the request data.
     """
-    if key not in request.POST:
+    if key not in request.data:
         raise HTTP400('Missing {} in request.'.format(key))
-    return request.POST[key]
+    return request.data[key]
 
 
 def get_object_or_404(model, pk):

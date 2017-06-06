@@ -257,7 +257,7 @@ class BrewhouseLaunchViewTest(TestCase):
 
         request = Mock()
         request.user = user
-        request.POST = QueryDict('brewhouse={}&recipe={}'.format(
+        request.data = QueryDict('brewhouse={}&recipe={}'.format(
             brewhouse.pk, recipe.pk))
 
         response = views.BrewhouseLaunchView.post(request)
@@ -277,7 +277,7 @@ class BrewhouseLaunchViewTest(TestCase):
 
         request = Mock()
         request.user = user
-        request.POST = QueryDict('brewhouse={}&recipe={}'.format(
+        request.data = QueryDict('brewhouse={}&recipe={}'.format(
             brewhouse.pk, recipe.pk))
 
         with self.assertRaises(http.HTTP403):
@@ -298,7 +298,7 @@ class BrewhouseLaunchViewTest(TestCase):
 
         request = Mock()
         request.user = user
-        request.POST = QueryDict('brewhouse={}&recipe={}'.format(
+        request.data = QueryDict('brewhouse={}&recipe={}'.format(
             brewhouse.pk, recipe.pk))
 
         with self.assertRaises(http.HTTP403):
@@ -317,7 +317,7 @@ class BrewhouseEndViewTest(TestCase):
 
         request = Mock()
         request.user = user
-        request.POST = QueryDict(
+        request.data = QueryDict(
             'recipe_instance={}'.format(recipe_instance.pk))
 
         response = views.BrewhouseEndView.post(request)
@@ -337,7 +337,7 @@ class BrewhouseEndViewTest(TestCase):
 
         request = Mock()
         request.user = user
-        request.POST = QueryDict(
+        request.data = QueryDict(
             'recipe_instance={}'.format(recipe_instance.pk))
 
         with self.assertRaises(http.HTTP403):

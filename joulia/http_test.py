@@ -15,14 +15,14 @@ from joulia import http
 class GetPostValueOr400Test(TestCase):
     def test_key_missing(self):
         request = Mock()
-        request.POST = QueryDict('foo=bar')
+        request.data = QueryDict('foo=bar')
         with self.assertRaises(http.HTTP400):
-            http.get_post_value_or_400(request, 'bar')
+            http.get_data_value_or_400(request, 'bar')
 
     def test_key_present(self):
         request = Mock()
-        request.POST = QueryDict('foo=bar')
-        value = http.get_post_value_or_400(request, 'foo')
+        request.data = QueryDict('foo=bar')
+        value = http.get_data_value_or_400(request, 'foo')
         self.assertEquals(value, 'bar')
 
 
