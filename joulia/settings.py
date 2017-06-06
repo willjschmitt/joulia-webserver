@@ -58,6 +58,7 @@ MIDDLEWARE = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'joulia.http.ConvertHTTPExceptionsMiddleware',
     'joulia.log_requests.HeadersLoggingMiddleware',
 )
 
