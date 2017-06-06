@@ -3,6 +3,7 @@
 
 from django.contrib.auth.models import User
 from django.http import HttpResponseBadRequest
+from django.http import HttpResponseForbidden
 from django.http import HttpResponseNotFound
 from django.http import QueryDict
 from django.test import TestCase
@@ -53,6 +54,14 @@ class ConvertHTTPExceptionsMiddleware(TestCase):
         request = Mock()
         response = middleware(request)
         self.assertEquals(type(response), HttpResponseBadRequest)
+
+    def test_403_response(self):
+        def get_response(_):
+            raise http.HTTP403()
+        middleware = http.ConvertHTTPExceptionsMiddleware(get_response)
+        request = Mock()
+        response = middleware(request)
+        self.assertEquals(type(response), HttpResponseForbidden)
 
     def test_404_response(self):
         def get_response(_):

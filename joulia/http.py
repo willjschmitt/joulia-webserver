@@ -4,9 +4,14 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseNotFound
+from django.http import HttpResponseForbidden
 
 
 class HTTP400(Exception):
+    pass
+
+
+class HTTP403(Exception):
     pass
 
 
@@ -50,7 +55,8 @@ def get_object_or_404(model, pk):
     try:
         obj = model.objects.get(pk=pk)
     except ObjectDoesNotExist as e:
-        raise HTTP404('Object not found.') from e
+        raise HTTP404(
+            '{} instance not found.'.format(model)) from e
     else:
         return obj
 
@@ -64,6 +70,8 @@ class ConvertHTTPExceptionsMiddleware(object):
             response = self.get_response(request)
         except HTTP400 as e:
             return HttpResponseBadRequest(e)
+        except HTTP403 as e:
+            return HttpResponseForbidden(e)
         except HTTP404 as e:
             return HttpResponseNotFound(e)
 
