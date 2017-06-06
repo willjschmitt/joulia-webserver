@@ -2,6 +2,7 @@
 """
 
 from django.contrib.auth.models import Group, User
+from django.http import QueryDict
 from django.test import Client
 from django.test import TestCase
 import json
@@ -11,6 +12,7 @@ from unittest.mock import Mock
 
 from brewery import models
 from brewery import views
+from joulia import http
 
 
 class BreweryTestBase(TestCase):
@@ -241,3 +243,102 @@ class BrewhouseIdByTokenTest(TestCase):
         self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(json.loads(response.content.decode())['brewhouse'],
                           brewhouse.pk)
+
+
+class BrewhouseLaunchViewTest(TestCase):
+    def test_launches(self):
+        user = User.objects.create(username="foo")
+        group = Group.objects.create(name="bar")
+        group.user_set.add(user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+        recipe = models.Recipe.objects.create(company=brewing_company)
+
+        request = Mock()
+        request.user = user
+        request.POST = QueryDict('brewhouse={}&recipe={}'.format(
+            brewhouse.pk, recipe.pk))
+
+        response = views.BrewhouseLaunchView.post(request)
+        pk = json.loads(response.content.decode())['id']
+        self.assertTrue(models.RecipeInstance.objects.get(pk=pk).active)
+
+    def test_launch_fails_not_owning_brewhouse(self):
+        user = User.objects.create(username="foo")
+        group = Group.objects.create(name="bar")
+        group.user_set.add(user)
+        other_group = Group.objects.create(name="baz")
+        brewing_company = models.BrewingCompany.objects.create(
+            group=other_group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+        recipe = models.Recipe.objects.create(company=brewing_company)
+
+        request = Mock()
+        request.user = user
+        request.POST = QueryDict('brewhouse={}&recipe={}'.format(
+            brewhouse.pk, recipe.pk))
+
+        with self.assertRaises(http.HTTP403):
+            views.BrewhouseLaunchView.post(request)
+
+    def test_launch_fails_not_owning_recipe(self):
+        user = User.objects.create(username="foo")
+        group = Group.objects.create(name="bar")
+        group.user_set.add(user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company)
+        brewhouse = models.Brewhouse.objects.create(brewery=brewery)
+
+        other_group = Group.objects.create(name="baz")
+        other_brewing_company = models.BrewingCompany.objects.create(
+            group=other_group)
+        recipe = models.Recipe.objects.create(company=other_brewing_company)
+
+        request = Mock()
+        request.user = user
+        request.POST = QueryDict('brewhouse={}&recipe={}'.format(
+            brewhouse.pk, recipe.pk))
+
+        with self.assertRaises(http.HTTP403):
+            views.BrewhouseLaunchView.post(request)
+
+
+class BrewhouseEndViewTest(TestCase):
+    def test_ends(self):
+        user = User.objects.create(username="foo")
+        group = Group.objects.create(name="bar")
+        group.user_set.add(user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        recipe = models.Recipe.objects.create(company=brewing_company)
+        recipe_instance = models.RecipeInstance.objects.create(
+            recipe=recipe, active=True)
+
+        request = Mock()
+        request.user = user
+        request.POST = QueryDict(
+            'recipe_instance={}'.format(recipe_instance.pk))
+
+        response = views.BrewhouseEndView.post(request)
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+
+    def test_ends_does_not_own_recipe_instance(self):
+        user = User.objects.create(username="foo")
+        group = Group.objects.create(name="bar")
+        group.user_set.add(user)
+
+        other_group = Group.objects.create(name="baz")
+        other_brewing_company = models.BrewingCompany.objects.create(
+            group=other_group)
+        recipe = models.Recipe.objects.create(company=other_brewing_company)
+        recipe_instance = models.RecipeInstance.objects.create(
+            recipe=recipe, active=True)
+
+        request = Mock()
+        request.user = user
+        request.POST = QueryDict(
+            'recipe_instance={}'.format(recipe_instance.pk))
+
+        with self.assertRaises(http.HTTP403):
+            views.BrewhouseEndView.post(request)
