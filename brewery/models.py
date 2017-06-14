@@ -169,7 +169,7 @@ class Recipe(models.Model):
         style: Style for the recipe to conform to.
         company: Brewing Company that owns the recipe.
     """
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, default="Unnamed")
     style = models.ForeignKey(BeerStyle, null=True)
 
     company = models.ForeignKey(BrewingCompany, null=True)
