@@ -70,6 +70,7 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
             return
 
         self.write(result)
+        self.unregister_waiter()
 
     def handle_request(self):
         """Handles the particulars for start/stopping an instance. Should be
@@ -141,12 +142,18 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
             self.waiters[self.brewhouse] = set()
         self.waiters[self.brewhouse].add(self.future)
 
-    def _handle_lost_connection(self):
-        """Removes current future for brewhouse."""
-        LOGGER.debug('Lost waiter connection')
+    def unregister_waiter(self):
+        """Unregisters the currenty set future. Useful when connection is lost,
+        or the request has been fulfilled.
+        """
         if self.brewhouse in self.waiters:
             waiter = self.waiters[self.brewhouse]
             waiter.remove(self.future)
+
+    def _handle_lost_connection(self):
+        """Removes current future for brewhouse."""
+        LOGGER.debug('Lost waiter connection')
+        self.unregister_waiter()
 
     def get_and_check_permission(self):
         """Gets the brewhouse and checks permission. If any step fails, returns
