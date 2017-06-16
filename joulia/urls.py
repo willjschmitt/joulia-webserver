@@ -15,6 +15,7 @@ urlpatterns = [
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^brewery/', include('brewery.urls')),
+    url(r'^user/', include('user.urls')),
     url(r'^auth/', include('auth.urls')),
 
     url(r"live/timeseries/new/$", brewery_views.TimeSeriesNewHandler.as_view()),
