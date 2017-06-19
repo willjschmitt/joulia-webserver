@@ -168,11 +168,27 @@ class Recipe(models.Model):
         name: Human readable name for the recipe.
         style: Style for the recipe to conform to.
         company: Brewing Company that owns the recipe.
+        strike_temperature: Temperature to raise Hot Liquor Tun to before strike
+            and pumping the Hot Liquor into the Mash Tun. Units: degrees
+            Fahrenheit.
+        mashout_temperature: Temperature to raise the mash temperature to after
+            mash is done to stop enzymatic process and decrease visosity of
+            wort. Units: degrees Fahrenheit.
+        mashout_time: Time to hold the mash at the ``mashout_temperature``.
+            Units: minutes.
+        cool_temperature: Temperature to bring wort down to after boiling.
+            Units: degrees Fahrenheit.
     """
     name = models.CharField(max_length=64, default="Unnamed")
     style = models.ForeignKey(BeerStyle, null=True)
 
     company = models.ForeignKey(BrewingCompany, null=True)
+
+    # Temperatures and times.
+    strike_temperature = models.FloatField(default=162.0)
+    mashout_temperature = models.FloatField(default=170.0)
+    mashout_time = models.FloatField(default=10.0)
+    cool_temperature = models.FloatField(default=70.0)
 
     def __str__(self):
         return "{}({})".format(self.name, self.style)
