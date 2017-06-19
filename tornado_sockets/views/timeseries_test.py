@@ -9,9 +9,9 @@ from datetime import timedelta
 from tornado import gen
 from tornado.escape import json_decode
 from tornado.escape import json_encode
+from tornado.ioloop import TimeoutError
 from tornado.testing import gen_test
 from tornado.testing import AsyncHTTPTestCase
-from tornado.web import Application
 from tornado.websocket import websocket_connect
 from unittest.mock import Mock
 
@@ -73,10 +73,10 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         return joulia_app()
 
     @gen.coroutine
-    def generate_websocket(self):
+    def generate_websocket(self, **kwargs):
         url = ("ws://localhost:" + str(self.get_http_port())
                + "/live/timeseries/socket/")
-        websocket = yield websocket_connect(url)
+        websocket = yield websocket_connect(url, **kwargs)
         return websocket
 
     def compare_response_to_model_instance(self, response, model_instance):
@@ -156,6 +156,47 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
 
         response = yield websocket.read_message()
         self.compare_response_to_model_instance(response, new_point)
+
+    @gen_test(timeout=1.0)
+    def test_updated_data_not_sent_to_subscriber_who_sent_it(self):
+        now = timezone.now()
+
+        # Gives a shared variable to manipulate in the closure.
+        received = {'received': False}
+        def message_received(*args, **kwargs):
+            received['received'] = True
+
+        websocket = yield self.generate_websocket(
+            on_message_callback=message_received)
+
+        message = {
+            "recipe_instance": self.recipe_instance.pk,
+            "sensor": self.sensor.pk,
+            "subscribe": True,
+        }
+        websocket.write_message(json_encode(message))
+
+        # This sleep allows the server to finish the subscription, so it doesn't
+        # treat the new datapoint as historical data.
+        # TODO(willjschmitt): This will be flaky. Replace with an alternative.
+        yield gen.sleep(0.02)
+
+        message = {
+            "recipe_instance": self.recipe_instance.pk,
+            "sensor": self.sensor.pk,
+            "value": 13,
+            "time": now.isoformat().replace("+00:00", "Z")
+        }
+        websocket.write_message(json_encode(message))
+
+        # This sleep allows the server to finish saving the new data point to
+        # the server.
+        # TODO(willjschmitt): This will be flaky. Replace with an alternative
+        # like a simultaneous subscription and wait for it to come in on a
+        # subscribed websocket.
+        yield gen.sleep(0.02)
+
+        self.assertFalse(received['received'])
 
     @gen_test
     def test_new_data(self):

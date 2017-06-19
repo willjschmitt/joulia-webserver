@@ -275,6 +275,12 @@ class TimeSeriesDataPoint(models.Model):
         time: The time of the measurement.
         value: A (float) value measured by the sensor. Intention is to extend
             this to more variable types in a better way.
+        source: A short string that can be used to identify the source of a data
+            point. Intentionally short, so each data point doesn't grow too much
+            in size, since this table will have a large number of points. Should
+            really only be used to identify a data point in subscribers to make
+            sure we don't send the data point to a waiter, who was the one that
+            sent it.
     """
     # TODO(willjschmitt): Move time series data into a nosql database.
     sensor = models.ForeignKey(AssetSensor)
@@ -282,6 +288,8 @@ class TimeSeriesDataPoint(models.Model):
 
     time = models.DateTimeField(default=timezone.now)
     value = models.FloatField(null=True)
+
+    source = models.TextField(max_length=4, null=True)
 
     def __str__(self):
         return "{} - {} @ {}".format(
