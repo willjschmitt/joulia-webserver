@@ -25,6 +25,6 @@ class UserPreferencesApiMixinTest(TestCase):
 
         view = views.UserPreferencesDetailView()
         view.request = Mock(user=user)
-        got = view.get_queryset()
+        got = view.get_object()
         self.assertEquals(user.userpreferences, got)
         self.assertNotEquals(other_user.userpreferences, got)

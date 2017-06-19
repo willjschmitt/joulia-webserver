@@ -18,6 +18,9 @@ class UserPreferences(models.Model):
 
     energy_cost_rate = models.FloatField(default=0.10)
 
+    def __str__(self):
+        return str(self.user) + " - User Preferences"
+
 
 @receiver(post_save, sender=User)
 def user_preferences_creator(sender, instance, **kwargs):
