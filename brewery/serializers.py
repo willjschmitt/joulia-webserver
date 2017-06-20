@@ -44,7 +44,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         model = models.Recipe
         fields = ('id', 'name', 'style', 'last_brewed', 'number_of_batches',
                   'company', 'strike_temperature', 'mashout_temperature',
-                  'mashout_time', 'cool_temperature',)
+                  'mashout_time', 'boil_time', 'cool_temperature',)
 
     @staticmethod
     def get_last_brewed(recipe):

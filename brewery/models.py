@@ -176,6 +176,7 @@ class Recipe(models.Model):
             wort. Units: degrees Fahrenheit.
         mashout_time: Time to hold the mash at the ``mashout_temperature``.
             Units: minutes.
+        boil_time: Time to boil the wort. Units: minutes.
         cool_temperature: Temperature to bring wort down to after boiling.
             Units: degrees Fahrenheit.
     """
@@ -188,6 +189,7 @@ class Recipe(models.Model):
     strike_temperature = models.FloatField(default=162.0)
     mashout_temperature = models.FloatField(default=170.0)
     mashout_time = models.FloatField(default=10.0)
+    boil_time = models.FloatField(default=60.0)
     cool_temperature = models.FloatField(default=70.0)
 
     def __str__(self):
