@@ -17,6 +17,7 @@ from brewery.models import AssetSensor
 from brewery.models import RecipeInstance
 from brewery.models import TimeSeriesDataPoint
 from brewery.serializers import TimeSeriesDataPointSerializer
+from joulia.random import random_string
 from tornado_sockets.views.django import DjangoAuthenticatedWebSocketHandler
 
 LOGGER = logging.getLogger(__name__)
@@ -42,6 +43,9 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         controller_controllermap: (class-level) A dictionary mapping a brewhouse
             to the websocket connection to it. Used for indicating if a
             connection exists with a brewhouse.
+        source_id: Identifies a unique connection with a short hash, which we
+            can use to compare new data points to, and see if the socket was the
+            one that originated it, and thusly should not
     """
     waiters = set()
     subscriptions = {}
@@ -52,6 +56,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         super(TimeSeriesSocketHandler, self).__init__(*args, **kwargs)
         self.auth = None
         self.recipe_instance_pk = None
+
+        self.source_id = random_string(4)
 
     def get_compression_options(self):
         # Non-None enables compression with default options.
@@ -200,6 +206,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         LOGGER.debug('New data received.')
 
         data = parsed_message
+        data["source"] = self.source_id
         serializer = TimeSeriesDataPointSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -219,6 +226,10 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             waiter_count = len(cls.subscriptions[key])
             LOGGER.info("sending message to %d waiters.", waiter_count)
             for waiter in cls.subscriptions[key]:
+                # Skip sending data points to the subscriber that sent it.
+                if (new_data_point.source is not None
+                        and new_data_point.source == waiter.source_id):
+                    continue
                 serializer = TimeSeriesDataPointSerializer(new_data_point)
                 waiter.write_message(serializer.data)
         else:
