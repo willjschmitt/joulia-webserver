@@ -8,4 +8,5 @@ class UserSerializer(serializers.ModelSerializer):
     """Standard serializer for django.contrib.auth.models.User model."""
     class Meta:
         model = User
-        fields = ("email", "first_name", "groups", "last_name", "username")
+        fields = ("id", "email", "first_name", "groups", "last_name",
+                  "username")
