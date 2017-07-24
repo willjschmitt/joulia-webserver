@@ -5,6 +5,13 @@ from rest_framework import serializers
 from brewery import models
 
 
+class JouliaControllerReleaseSerializers(serializers.ModelSerializer):
+    """Standard serializer for JouliaControllerRelease model."""
+    class Meta:
+        model = models.JouliaControllerRelease
+        fields = '__all__'
+
+
 class BrewingCompanySerializer(serializers.ModelSerializer):
     """Standard serializer for BrewingCompany model."""
     class Meta:
