@@ -22,6 +22,27 @@ from joulia import http
 LOGGER = logging.getLogger(__name__)
 
 
+class JouliaControllerReleaseApiMixin(APIView):
+    """Common REST API view information for ``JouliaControllerRelease`` model.
+    """
+    serializer_class = serializers.JouliaControllerReleaseSerializers
+    queryset = models.JouliaControllerRelease.objects.all()
+
+
+class JouliaControllerReleaseListView(JouliaControllerReleaseApiMixin,
+                                      generics.ListAPIView):
+    """List REST API view for ``JouliaControllerRelease`` model."""
+    # TODO(willjschmitt): Add Create functionality for release software to
+    # programmatically update this.
+    pass
+
+
+class JouliaControllerReleaseDetailView(JouliaControllerReleaseApiMixin,
+                                        generics.RetrieveAPIView):
+    """Retrieve REST API view for ``JouliaControllerRelease`` model."""
+    pass
+
+
 class BrewingCompanyApiMixin(APIView):
     """Common REST API view information for ``BrewingCompany`` model."""
     serializer_class = serializers.BrewingCompanySerializer

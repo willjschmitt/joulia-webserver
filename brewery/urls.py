@@ -5,6 +5,11 @@ from django.conf.urls import url
 from brewery import views
 
 urlpatterns = [
+    url(r"api/joulia_controller_release/$",
+        views.JouliaControllerReleaseListView.as_view()),
+    url(r"api/joulia_controller_release/(?P<pk>[0-9]+)/$",
+        views.JouliaControllerReleaseDetailView.as_view()),
+
     url(r"api/brewingCompany/$", views.BrewingCompanyListView.as_view()),
     url(r"api/brewingCompany/(?P<pk>[0-9]+)/$",
         views.BrewingCompanyDetailView.as_view()),
