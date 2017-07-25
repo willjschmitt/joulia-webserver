@@ -5,6 +5,8 @@ from django.contrib import admin
 
 from brewery import models
 
+admin.site.register(models.JouliaControllerRelease, admin.ModelAdmin)
+
 admin.site.register(models.Brewery, admin.ModelAdmin)
 admin.site.register(models.BrewingCompany, admin.ModelAdmin)
 
