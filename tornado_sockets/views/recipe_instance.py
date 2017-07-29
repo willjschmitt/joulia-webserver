@@ -62,6 +62,7 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
             return
 
         self.future = Future()
+        self.register_waiter()
         self.handle_request()
         result = yield self.future
 
@@ -183,8 +184,6 @@ class RecipeInstanceStartHandler(RecipeInstanceHandler):
         if self.brewhouse.active:
             recipe_instance = self.brewhouse.active_recipe_instance
             self.future.set_result({"recipe_instance": recipe_instance.pk})
-        else:
-            self.register_waiter()
 
 
 class RecipeInstanceEndHandler(RecipeInstanceHandler):
@@ -202,8 +201,6 @@ class RecipeInstanceEndHandler(RecipeInstanceHandler):
         LOGGER.info("Got end watch request.")
         if not self.brewhouse.active:
             self.future.set_result({"recipe_instance": None})
-        else:
-            self.register_waiter()
 
 
 @receiver(post_save, sender=RecipeInstance)
