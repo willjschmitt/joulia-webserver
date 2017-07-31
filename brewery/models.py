@@ -71,8 +71,8 @@ class ResistanceTemperatureDevice(models.Model):
         alpha: The RTD resistance coefficient. Units: Ohms/degC.
         zero_resistance: The resistance of the RTD at 0degC. Units: Ohms.
     """
-    alpha = models.FloatField()
-    zero_resistance = models.FloatField()
+    alpha = models.FloatField(default=0.00385)
+    zero_resistance = models.FloatField(default=100.0)
 
 
 class ResistanceTemperatureDeviceAmplifier(models.Model):
@@ -103,12 +103,12 @@ class ResistanceTemperatureDeviceAmplifier(models.Model):
             reference voltage to difference the RTD against. Effectively forms
             a lower bounds for the RTD measurement. Units: Ohms.
     """
-    vcc = models.FloatField()
-    rtd_top_resistance = models.FloatField()
-    amplifier_resistance_a = models.FloatField()
-    amplifier_resistance_b = models.FloatField()
-    offset_resistance_bottom = models.FloatField()
-    offset_resistance_top = models.FloatField()
+    vcc = models.FloatField(default=3.3)
+    rtd_top_resistance = models.FloatField(default=1000.0)
+    amplifier_resistance_a = models.FloatField(default=15000.0)
+    amplifier_resistance_b = models.FloatField(default=270000.0)
+    offset_resistance_bottom = models.FloatField(default=10000.0)
+    offset_resistance_top = models.FloatField(default=100000.0)
 
 
 class ResistanceTemperatureDeviceMeasurement(models.Model):
@@ -129,11 +129,22 @@ class ResistanceTemperatureDeviceMeasurement(models.Model):
             converting the analog signal into the resolution of digital data it
             can provide. Units: Volts.
     """
-    rtd = models.ForeignKey(ResistanceTemperatureDevice)
-    amplifier = models.ForeignKey(ResistanceTemperatureDeviceAmplifier)
-    analog_pin = models.IntegerField()
+    rtd = models.ForeignKey(ResistanceTemperatureDevice, null=True)
+    amplifier = models.ForeignKey(ResistanceTemperatureDeviceAmplifier,
+                                  null=True)
+    analog_pin = models.IntegerField(default=0)
     tau_filter = models.FloatField(default=10.0)
     analog_reference = models.FloatField(default=3.3)
+
+    def save(self, *args, **kwargs):
+        if self.rtd is None:
+            self.rtd = ResistanceTemperatureDevice.objects.create()
+        if self.amplifier is None:
+            self.amplifier\
+                = ResistanceTemperatureDeviceAmplifier.objects.create()
+
+        super(ResistanceTemperatureDeviceMeasurement, self).save(*args,
+                                                                 **kwargs)
 
 
 class MashTun(models.Model):
@@ -152,9 +163,16 @@ class MashTun(models.Model):
             Watts/(delta degF).
     """
     temperature_sensor = models.ForeignKey(
-        ResistanceTemperatureDeviceMeasurement)
-    volume = models.FloatField()
-    heat_exchanger_conductivity = models.FloatField()
+        ResistanceTemperatureDeviceMeasurement, null=True)
+    volume = models.FloatField(default=5.0)
+    heat_exchanger_conductivity = models.FloatField(default=1.0)
+
+    def save(self, *args, **kwargs):
+        if self.temperature_sensor is None:
+            self.temperature_sensor\
+                = ResistanceTemperatureDeviceMeasurement.objects.create()
+
+        super(MashTun, self).save(*args, **kwargs)
 
 
 class HeatingElement(models.Model):
@@ -167,8 +185,8 @@ class HeatingElement(models.Model):
         pin: The GPIO pin number for the raspberry pi joulia-controller, which
             turns the heating element on or off.
     """
-    rating = models.FloatField()
-    pin = models.IntegerField()
+    rating = models.FloatField(default=5500.0)
+    pin = models.IntegerField(default=0)
 
 
 class HotLiquorTun(models.Model):
@@ -184,9 +202,19 @@ class HotLiquorTun(models.Model):
             the liquid in the HLT.
     """
     temperature_sensor = models.ForeignKey(
-        ResistanceTemperatureDeviceMeasurement)
-    volume = models.FloatField()
-    heating_element = models.ForeignKey(HeatingElement)
+        ResistanceTemperatureDeviceMeasurement, null=True)
+    volume = models.FloatField(default=5.0)
+    heating_element = models.ForeignKey(HeatingElement, null=True)
+
+    def save(self, *args, **kwargs):
+        if self.temperature_sensor is None:
+            self.temperature_sensor\
+                = ResistanceTemperatureDeviceMeasurement.objects.create()
+
+        if self.heating_element is None:
+            self.heating_element = HeatingElement.objects.create()
+
+        super(HotLiquorTun, self).save(*args, **kwargs)
 
 
 class Pump(models.Model):
@@ -197,7 +225,7 @@ class Pump(models.Model):
         pin: The GPIO pin number for the raspberry pi joulia-controller, which
             turns the pump on or off.
     """
-    pin = models.IntegerField()
+    pin = models.IntegerField(default=0)
 
 
 class Brewhouse(models.Model):
@@ -225,6 +253,11 @@ class Brewhouse(models.Model):
             the Brewhouse currently.
         active_recipe_instance: A property retrieving the currently active
             RecipeInstance if one exists.
+        boil_kettle: Heated vessel with temperature measurement, which doubles
+            as a hot liquor tun.
+        mash_tun: Vessel for mashing grain into wort.
+        main_pump: The main pump for moving liquid between vessels and
+            recirculating wort during mash.
     """
     name = models.CharField(max_length=64)
     brewery = models.ForeignKey(Brewery, null=True)
@@ -233,6 +266,11 @@ class Brewhouse(models.Model):
     user = models.OneToOneField(User, null=True)
 
     software_version = models.ForeignKey(JouliaControllerRelease, null=True)
+
+    # Equipment configurations.
+    boil_kettle = models.ForeignKey(HotLiquorTun, null=True)
+    mash_tun = models.ForeignKey(MashTun, null=True)
+    main_pump = models.ForeignKey(Pump, null=True)
 
     @property
     def active(self):
@@ -298,6 +336,15 @@ class Brewhouse(models.Model):
         if self.token.user != self.user:
             raise InvalidUserError("Token associated with Brewhouse {} is not"
                                    " associated with user.")
+
+        if self.boil_kettle is None:
+            self.boil_kettle = HotLiquorTun.objects.create()
+
+        if self.mash_tun is None:
+            self.mash_tun = MashTun.objects.create()
+
+        if self.main_pump is None:
+            self.main_pump = Pump.objects.create()
 
         super(Brewhouse, self).save(*args, **kwargs)
 
