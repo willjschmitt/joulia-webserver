@@ -298,6 +298,13 @@ class Brewhouse(models.Model):
         """Automatically sets the user and token attributes, making sure the
         User has permission to edit this Brewhouse and related items.
         """
+        if self.boil_kettle is None:
+            self.boil_kettle = HotLiquorTun.objects.create()
+        if self.mash_tun is None:
+            self.mash_tun = MashTun.objects.create()
+        if self.main_pump is None:
+            self.main_pump = Pump.objects.create()
+
         # If there is not a brewing company associated with the Brewhouse, just
         # go ahead and save it immediately, since it cannot be auth'ed with
         # permissions anyways.
@@ -336,15 +343,6 @@ class Brewhouse(models.Model):
         if self.token.user != self.user:
             raise InvalidUserError("Token associated with Brewhouse {} is not"
                                    " associated with user.")
-
-        if self.boil_kettle is None:
-            self.boil_kettle = HotLiquorTun.objects.create()
-
-        if self.mash_tun is None:
-            self.mash_tun = MashTun.objects.create()
-
-        if self.main_pump is None:
-            self.main_pump = Pump.objects.create()
 
         super(Brewhouse, self).save(*args, **kwargs)
 
