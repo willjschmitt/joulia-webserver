@@ -63,6 +63,143 @@ class Brewery(models.Model):
         return "{}".format(self.name)
 
 
+class ResistanceTemperatureDevice(models.Model):
+    """An RTD sensor device itself. Just the electrical properties of the
+    device.
+
+    Attributes:
+        alpha: The RTD resistance coefficient. Units: Ohms/degC.
+        zero_resistance: The resistance of the RTD at 0degC. Units: Ohms.
+    """
+    alpha = models.FloatField()
+    zero_resistance = models.FloatField()
+
+
+class ResistanceTemperatureDeviceAmplifier(models.Model):
+    """An amplifier circuit, which amplifies the resistance measurement from an
+    RTD into a usable voltage range.
+
+    Assumes an RTD input as the bottom of a resistive voltage divider circuit,
+    which is then differenced against a voltage, which provides an offset/lower
+    bound to the resistance measurement. The differencer has an amplifying gain.
+
+    Attributes:
+        vcc: The input voltage to the RTD voltage divider. Units: Volts.
+        rtd_top_resistance: The resistance of the top resistor in the voltage
+            divider circuit, where the RTD is the bottom resistance. This
+            converts the RTD resistance into a voltage. Units: Ohms.
+        amplifier_resistance_a: Resistor, which forms the denominator in the
+            differential amplifier gain as ``amplifier_resistance_b /
+            amplifier_resistance_b``. Units: Ohms.
+        amplifier_resistance_b: Resistor, which forms the numerator in the
+            differential amplifier gain as ``amplifier_resistance_b /
+            amplifier_resistance_b``. Units: Ohms.
+        offset_resistance_bottom: Resistor, which forms the bottom of the offset
+            voltage follower, which with the offset_resistance_top, forms a
+            reference voltage to difference the RTD against. Effectively forms
+            a lower bounds for the RTD measurement. Units: Ohms.
+        offset_resistance_top: Resistor, which forms the top of the offset
+            voltage follower, which with the offset_resistance_bottom, forms a
+            reference voltage to difference the RTD against. Effectively forms
+            a lower bounds for the RTD measurement. Units: Ohms.
+    """
+    vcc = models.FloatField()
+    rtd_top_resistance = models.FloatField()
+    amplifier_resistance_a = models.FloatField()
+    amplifier_resistance_b = models.FloatField()
+    offset_resistance_bottom = models.FloatField()
+    offset_resistance_top = models.FloatField()
+
+
+class ResistanceTemperatureDeviceMeasurement(models.Model):
+    """An RTD sensor device with an amplifier circuit and multi-channel A/D
+    measurement device.
+
+    Attributes:
+        rtd: The RTD device itself, which adjusts its resistance based on the
+            temperature.
+        amplifier: An amplifier circuit for amplifying the resistance of the
+            ``rtd`` into a usable voltage range up to ``analog_reference``.
+        analog_pin: The pin number for the channel on the A/D device, where the
+            voltage should be measured.
+        tau_filter: The time constant, which should be applied to the measured
+            raw signal to filter out noise. Is used in the transfer function
+            1/(1+s*tau). Units: Seconds.
+        analog_reference: The voltage reference used by the A/D chip for
+            converting the analog signal into the resolution of digital data it
+            can provide. Units: Volts.
+    """
+    rtd = models.ForeignKey(ResistanceTemperatureDevice)
+    amplifier = models.ForeignKey(ResistanceTemperatureDeviceAmplifier)
+    analog_pin = models.IntegerField()
+    tau_filter = models.FloatField(default=10.0)
+    analog_reference = models.FloatField(default=3.3)
+
+
+class MashTun(models.Model):
+    """A vessel for mashing grain in.
+
+    Attributes:
+        temperature_sensor: An RTD measurement system measuring the temperature
+            of the output liquid from the mash tun in a recirculating
+            configuration.
+        volume: Size of the mash tun vessel. Units: gallons.
+        heat_exchanger_conductivity: The rough conductivity for heat energy from
+            the hot liquor tun into the heat exchanger into the mash tun. This
+            does not yet take into account flow rates, and should roughly be
+            calibrated on the sytem typical flow rate. It's mostly a heuristic
+            value for tuning the mash tun PI temperature regulator. Units:
+            Watts/(delta degF).
+    """
+    temperature_sensor = models.ForeignKey(
+        ResistanceTemperatureDeviceMeasurement)
+    volume = models.FloatField()
+    heat_exchanger_conductivity = models.FloatField()
+
+
+class HeatingElement(models.Model):
+    """A resistive heating element, whose power output can be varied by
+    adjusting the average applied voltage to it, through PWM.
+
+    Attributes:
+        rating: The power output rating of the heating element at full voltage.
+            Units: Watts.
+        pin: The GPIO pin number for the raspberry pi joulia-controller, which
+            turns the heating element on or off.
+    """
+    rating = models.FloatField()
+    pin = models.IntegerField()
+
+
+class HotLiquorTun(models.Model):
+    """A hot liquor tun, which may double for a boil kettle. Has temperature
+    measurement and heating capabilities, as well as liquid extraction and heat
+    exchanger capabilities.
+
+    Attributes:
+        temperature_sensor: An RTD measurement system measuring the temperature
+            of the vessel as long as it has liquid in it.
+        volume: Size of the HLT. Units: gallons.
+        heating_element: Heating element, capable of adding thermal energy into
+            the liquid in the HLT.
+    """
+    temperature_sensor = models.ForeignKey(
+        ResistanceTemperatureDeviceMeasurement)
+    volume = models.FloatField()
+    heating_element = models.ForeignKey(HeatingElement)
+
+
+class Pump(models.Model):
+    """Liquid pump, which can provide pressure increase to a liquid system for
+    moving wort or other liquid between vessels, or for recirculation.
+
+    Attributes:
+        pin: The GPIO pin number for the raspberry pi joulia-controller, which
+            turns the pump on or off.
+    """
+    pin = models.IntegerField()
+
+
 class Brewhouse(models.Model):
     """A brewhouse facility for mashing and boiling a recipe instance.
 
