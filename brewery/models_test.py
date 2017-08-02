@@ -39,6 +39,85 @@ class BreweryTest(TestCase):
         self.assertEquals(str(brewery), "Foo")
 
 
+class ResistanceTemperatureDeviceMeasurementTest(TestCase):
+    """Tests for the ResistanceTemperatureDeviceMeasurement model."""
+
+    def test_save_no_rtd(self):
+        temperature_sensor = models.ResistanceTemperatureDeviceMeasurement()
+        self.assertIsNone(temperature_sensor.rtd)
+        temperature_sensor.save()
+        self.assertIsNotNone(temperature_sensor.rtd)
+
+    def test_save_has_rtd(self):
+        temperature_sensor = models.ResistanceTemperatureDeviceMeasurement()
+        rtd = models.ResistanceTemperatureDevice.objects.create()
+        temperature_sensor.rtd = rtd
+        temperature_sensor.save()
+        self.assertIs(temperature_sensor.rtd, rtd)
+
+    def test_save_no_amplifier(self):
+        temperature_sensor = models.ResistanceTemperatureDeviceMeasurement()
+        self.assertIsNone(temperature_sensor.amplifier)
+        temperature_sensor.save()
+        self.assertIsNotNone(temperature_sensor.amplifier)
+
+    def test_save_has_amplifier(self):
+        temperature_sensor = models.ResistanceTemperatureDeviceMeasurement()
+        amplifier = models.ResistanceTemperatureDeviceAmplifier.objects.create()
+        temperature_sensor.amplifier = amplifier
+        temperature_sensor.save()
+        self.assertIs(temperature_sensor.amplifier, amplifier)
+
+
+class MashTunTest(TestCase):
+    """Tests for the MashTun model."""
+
+    def test_save_no_rtd(self):
+        mash_tun = models.MashTun()
+        self.assertIsNone(mash_tun.temperature_sensor)
+        mash_tun.save()
+        self.assertIsNotNone(mash_tun.temperature_sensor)
+
+    def test_save_has_rtd(self):
+        mash_tun = models.MashTun()
+        temperature_sensor\
+            = models.ResistanceTemperatureDeviceMeasurement.objects.create()
+        mash_tun.temperature_sensor = temperature_sensor
+        mash_tun.save()
+        self.assertIs(mash_tun.temperature_sensor, temperature_sensor)
+
+
+class HotLiquorTunTest(TestCase):
+    """Tests for the HotLiquorTun model."""
+
+    def test_save_no_rtd(self):
+        hot_liquor_tun = models.HotLiquorTun()
+        self.assertIsNone(hot_liquor_tun.temperature_sensor)
+        hot_liquor_tun.save()
+        self.assertIsNotNone(hot_liquor_tun.temperature_sensor)
+
+    def test_save_has_rtd(self):
+        hot_liquor_tun = models.HotLiquorTun()
+        temperature_sensor\
+            = models.ResistanceTemperatureDeviceMeasurement.objects.create()
+        hot_liquor_tun.temperature_sensor = temperature_sensor
+        hot_liquor_tun.save()
+        self.assertIs(hot_liquor_tun.temperature_sensor, temperature_sensor)
+
+    def test_save_no_heating_element(self):
+        hot_liquor_tun = models.HotLiquorTun()
+        self.assertIsNone(hot_liquor_tun.heating_element)
+        hot_liquor_tun.save()
+        self.assertIsNotNone(hot_liquor_tun.heating_element)
+
+    def test_save_has_heating_element(self):
+        hot_liquor_tun = models.HotLiquorTun()
+        heating_element = models.HeatingElement.objects.create()
+        hot_liquor_tun.heating_element = heating_element
+        hot_liquor_tun.save()
+        self.assertIs(hot_liquor_tun.heating_element, heating_element)
+
+
 class BrewhouseTest(TestCase):
     """Test for the Brewhouse model."""
 
@@ -171,6 +250,45 @@ class BrewhouseTest(TestCase):
         models.RecipeInstance.objects.create(
             recipe=recipe, brewhouse=brewhouse, active=True)
         self.assertEquals(str(brewhouse), "Bar - Foo")
+
+    def test_save_no_boil_kettle(self):
+        brewhouse = models.Brewhouse()
+        self.assertIsNone(brewhouse.boil_kettle)
+        brewhouse.save()
+        self.assertIsNotNone(brewhouse.boil_kettle)
+
+    def test_save_has_boil_kettle(self):
+        brewhouse = models.Brewhouse()
+        boil_kettle = models.HotLiquorTun.objects.create()
+        brewhouse.boil_kettle = boil_kettle
+        brewhouse.save()
+        self.assertIs(brewhouse.boil_kettle, boil_kettle)
+
+    def test_save_no_mash_tun(self):
+        brewhouse = models.Brewhouse()
+        self.assertIsNone(brewhouse.mash_tun)
+        brewhouse.save()
+        self.assertIsNotNone(brewhouse.mash_tun)
+
+    def test_save_has_mash_tun(self):
+        brewhouse = models.Brewhouse()
+        mash_tun = models.MashTun.objects.create()
+        brewhouse.mash_tun = mash_tun
+        brewhouse.save()
+        self.assertIs(brewhouse.mash_tun, mash_tun)
+
+    def test_save_no_pump(self):
+        brewhouse = models.Brewhouse()
+        self.assertIsNone(brewhouse.main_pump)
+        brewhouse.save()
+        self.assertIsNotNone(brewhouse.main_pump)
+
+    def test_save_has_pump(self):
+        brewhouse = models.Brewhouse()
+        main_pump = models.Pump.objects.create()
+        brewhouse.main_pump = main_pump
+        brewhouse.save()
+        self.assertIs(brewhouse.main_pump, main_pump)
 
 
 class BeerStyleTest(TestCase):
