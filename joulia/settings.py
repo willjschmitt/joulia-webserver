@@ -24,8 +24,8 @@ ALLOWED_HOSTS = [
     'joulia.io',
     'brew.joulia.io',
     'www.joulia.io',
-    'localhost',
-    'brew.localhost',
+    'example.com',
+    'brew.example.com',
     '127.0.0.1',
     '[::1]',
 ]
@@ -37,7 +37,10 @@ ALLOWED_HOSTS = [
 # SECURE_SSL_REDIRECT = True
 
 # Enables cross-domain cookies for all of joulia.io.
-SESSION_COOKIE_DOMAIN = '.joulia.io'
+if PRODUCTION_HOST:
+    SESSION_COOKIE_DOMAIN = '.joulia.io'
+else:
+    SESSION_COOKIE_DOMAIN = '.example.com'
 
 # Application definition
 
