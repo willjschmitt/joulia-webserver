@@ -39,8 +39,10 @@ ALLOWED_HOSTS = [
 # Enables cross-domain cookies for all of joulia.io.
 if PRODUCTION_HOST:
     SESSION_COOKIE_DOMAIN = '.joulia.io'
+    CSRF_COOKIE_DOMAIN = '.joulia.io'
 else:
     SESSION_COOKIE_DOMAIN = '.example.com'
+    CSRF_COOKIE_DOMAIN = '.example.com'
 
 # Application definition
 
