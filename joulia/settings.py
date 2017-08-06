@@ -36,6 +36,9 @@ ALLOWED_HOSTS = [
 # CSRF_COOKIE_SECURE = True
 # SECURE_SSL_REDIRECT = True
 
+# Enables cross-domain cookies for all of joulia.io.
+SESSION_COOKIE_DOMAIN = '.joulia.io'
+
 # Application definition
 
 INSTALLED_APPS = (
