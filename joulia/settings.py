@@ -22,6 +22,7 @@ DEBUG = True  # not PRODUCTION_HOST
 
 ALLOWED_HOSTS = [
     'joulia.io',
+    'brew.joulia.io',
     'www.joulia.io',
     'localhost',
     '127.0.0.1',
