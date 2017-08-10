@@ -5,6 +5,7 @@ from datetime import datetime
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 from rest_framework.authtoken.models import Token
@@ -395,6 +396,68 @@ class Recipe(models.Model):
 
     def __str__(self):
         return "{}({})".format(self.name, self.style)
+
+
+class Ingredient(models.Model):
+    """An ingredient, which can be used in a recipe.
+
+    Attributes:
+        name: The human-readable name for the ingredient.
+    """
+    name = models.CharField(max_length=256)
+
+    class Meta:
+        abstract = True
+
+
+class MaltIngredient(Ingredient):
+    """An ingredient, which can be used in a recipe, and provides sugar for
+    fermentation.
+
+    Attributes:
+        potential_sg_contribution: The potential sugar contribution to a mash.
+            Units: Specific gravity (relative to water) with 1 pound added to
+            1 gallon of water.
+        color: The color contribution from the grain to the mash. Units: SRM.
+    """
+    potential_sg_contribution = models.FloatField(
+        default=1.0, validators=(MinValueValidator(1.0),))
+    color = models.FloatField(default=1.0)
+
+
+class BitteringIngredient(Ingredient):
+    """An ingredient, which provides bitterness to a recipe, like hops.
+
+    Attributes:
+        alpha_acid_weight: Per-unit amount of alpha acid by weight of the hops.
+    """
+    alpha_acid_weight = models.FloatField(default=0.0)
+
+
+BREWING_STEP_CHOICES = (
+    ('0', 'MASH',),
+    ('1', 'BOIL',),
+    ('2', 'WHIRLPOOL',),
+    ('3', 'FERMENTATION',),
+    ('4', 'CONDITIONING',),
+)
+
+
+class IngredientAddition(models.Model):
+    """An ingredient entry in a Recipe.
+
+    Attributes:
+        recipe: The recipe this ingredient addition is associated with.
+        ingredient: The ingredient definition with its properties.
+        step_added: The step this ingredient will be added to.
+        time_added: Time relative to the end of this step this ingredient will
+            be added. Units: seconds.
+    """
+    recipe = models.ForeignKey(Recipe)
+    malt_ingredients = models.ForeignKey(MaltIngredient, null=True)
+    bittering_ingredients = models.ForeignKey(BitteringIngredient, null=True)
+    step_added = models.CharField(max_length=1, choices=BREWING_STEP_CHOICES)
+    time_added = models.IntegerField(default=0)
 
 
 class MashPoint(models.Model):

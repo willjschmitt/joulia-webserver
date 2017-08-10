@@ -171,6 +171,27 @@ class BeerStyleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class MaltIngredientSerializer(serializers.ModelSerializer):
+    """Standard serializer for MaltIngredient."""
+    class Meta:
+        model = models.MaltIngredient
+        field = '__all__'
+
+
+class BitteringIngredientSerializer(serializers.ModelSerializer):
+    """Standard serializer for BitteringIngredient."""
+    class Meta:
+        model = models.BitteringIngredient
+        field = '__all__'
+
+
+class IngredientAdditionSerializer(serializers.ModelSerializer):
+    """Standard serializer for IngredientAddition."""
+    class Meta:
+        model = models.IngredientAddition
+        field = '__all__'
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     """Standard serializer for Recipe."""
     last_brewed = serializers.SerializerMethodField()
