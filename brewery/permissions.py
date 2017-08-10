@@ -7,6 +7,15 @@ from rest_framework.permissions import SAFE_METHODS
 from brewery import models
 
 
+class IsAdminToEdit(permissions.BasePermission):
+    """Must be a superuser to edit, but get accesses are okay for everyone."""
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+
+        return request.user and request.user.is_superuser
+
+
 class IsMember(permissions.BasePermission):
     """Checks the current user is a member of the requested brewing company."""
     def has_object_permission(self, request, view, brewing_company):
