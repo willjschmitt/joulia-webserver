@@ -154,23 +154,50 @@ class BitteringIngredientDetailView(BitteringIngredientAPIMixin,
     pass
 
 
-class IngredientAdditionAPIMixin(APIView):
-    """Common REST API view information for ``IngredientAddition`` model."""
-    serializer_class = serializers.IngredientAdditionSerializer
+class MaltIngredientAdditionAPIMixin(APIView):
+    """Common REST API view information for ``MaltIngredientAddition`` model."""
+    filter_fields = ('id', 'recipe',)
+    serializer_class = serializers.MaltIngredientAdditionSerializer
     permission_classes = (IsAuthenticated, permissions.OwnsRecipe)
-    queryset = models.IngredientAddition.objects.all()
+    queryset = models.MaltIngredientAddition.objects.all()
 
 
-class IngredientAdditionListView(IngredientAdditionAPIMixin,
-                                 generics.ListCreateAPIView):
-    """List and Create REST API view for ``IngredientAddition`` model."""
+class MaltIngredientAdditionListView(MaltIngredientAdditionAPIMixin,
+                                     generics.ListCreateAPIView):
+    """List and Create REST API view for ``MaltIngredientAddition`` model."""
     pass
 
 
-class IngredientAdditionDetailView(IngredientAdditionAPIMixin,
-                                   generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, Update, and Destroy REST API view for ``IngredientAddition``
+class MaltIngredientAdditionDetailView(MaltIngredientAdditionAPIMixin,
+                                       generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for
+    ``MaltIngredientAddition`` model.
+    """
+    pass
+
+
+class BitteringIngredientAdditionAPIMixin(APIView):
+    """Common REST API view information for ``BitteringIngredientAddition``
+    model.
+    """
+    filter_fields = ('id', 'recipe',)
+    serializer_class = serializers.BitteringIngredientAdditionSerializer
+    permission_classes = (IsAuthenticated, permissions.OwnsRecipe)
+    queryset = models.BitteringIngredientAddition.objects.all()
+
+
+class BitteringIngredientAdditionListView(BitteringIngredientAdditionAPIMixin,
+                                          generics.ListCreateAPIView):
+    """List and Create REST API view for ``BitteringIngredientAddition``
     model."""
+    pass
+
+
+class BitteringIngredientAdditionDetailView(
+        BitteringIngredientAdditionAPIMixin,
+        generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for
+    ``BitteringIngredientAddition`` model."""
     pass
 
 

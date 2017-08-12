@@ -443,8 +443,8 @@ BREWING_STEP_CHOICES = (
 )
 
 
-class IngredientAddition(models.Model):
-    """An ingredient entry in a Recipe.
+class MaltIngredientAddition(models.Model):
+    """An MaltIngredient entry in a Recipe.
 
     Attributes:
         recipe: The recipe this ingredient addition is associated with.
@@ -454,8 +454,23 @@ class IngredientAddition(models.Model):
             be added. Units: seconds.
     """
     recipe = models.ForeignKey(Recipe)
-    malt_ingredients = models.ForeignKey(MaltIngredient, null=True)
-    bittering_ingredients = models.ForeignKey(BitteringIngredient, null=True)
+    ingredient = models.ForeignKey(MaltIngredient, null=True)
+    step_added = models.CharField(max_length=1, choices=BREWING_STEP_CHOICES)
+    time_added = models.IntegerField(default=0)
+
+
+class BitteringIngredientAddition(models.Model):
+    """An BitteringIngredient entry in a Recipe.
+
+    Attributes:
+        recipe: The recipe this ingredient addition is associated with.
+        ingredient: The ingredient definition with its properties.
+        step_added: The step this ingredient will be added to.
+        time_added: Time relative to the end of this step this ingredient will
+            be added. Units: seconds.
+    """
+    recipe = models.ForeignKey(Recipe)
+    ingredient = models.ForeignKey(BitteringIngredient, null=True)
     step_added = models.CharField(max_length=1, choices=BREWING_STEP_CHOICES)
     time_added = models.IntegerField(default=0)
 
