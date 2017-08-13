@@ -15,4 +15,7 @@ admin.site.register(models.AssetSensor, admin.ModelAdmin)
 
 admin.site.register(models.Recipe, admin.ModelAdmin)
 admin.site.register(models.RecipeInstance, admin.ModelAdmin)
+
 admin.site.register(models.BeerStyle, admin.ModelAdmin)
+admin.site.register(models.MaltIngredient, admin.ModelAdmin)
+admin.site.register(models.BitteringIngredient, admin.ModelAdmin)
