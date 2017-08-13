@@ -175,28 +175,28 @@ class MaltIngredientSerializer(serializers.ModelSerializer):
     """Standard serializer for MaltIngredient."""
     class Meta:
         model = models.MaltIngredient
-        field = '__all__'
+        fields = '__all__'
 
 
 class BitteringIngredientSerializer(serializers.ModelSerializer):
     """Standard serializer for BitteringIngredient."""
     class Meta:
         model = models.BitteringIngredient
-        field = '__all__'
+        fields = '__all__'
 
 
 class MaltIngredientAdditionSerializer(serializers.ModelSerializer):
     """Standard serializer for MaltIngredientAddition."""
     class Meta:
         model = models.MaltIngredientAddition
-        field = '__all__'
+        fields = '__all__'
 
 
 class BitteringIngredientAdditionSerializer(serializers.ModelSerializer):
     """Standard serializer for BitteringIngredientAddition."""
     class Meta:
         model = models.BitteringIngredientAddition
-        field = '__all__'
+        fields = '__all__'
 
 
 class RecipeSerializer(serializers.ModelSerializer):
