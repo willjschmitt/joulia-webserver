@@ -442,6 +442,17 @@ BREWING_STEP_CHOICES = (
     ('4', 'CONDITIONING',),
 )
 
+UNITS_CHOICES__POUNDS = '0'
+UNITS_CHOICES__OUNCES = '1'
+UNITS_CHOICES__GRAMS = '2'
+UNITS_CHOICES__KILOGRAMS = '3'
+UNITS_CHOICES = (
+    (UNITS_CHOICES__POUNDS, 'pounds',),
+    (UNITS_CHOICES__OUNCES, 'ounces',),
+    (UNITS_CHOICES__GRAMS, 'grams',),
+    (UNITS_CHOICES__KILOGRAMS, 'kilograms',),
+)
+
 
 class MaltIngredientAddition(models.Model):
     """An MaltIngredient entry in a Recipe.
@@ -450,6 +461,8 @@ class MaltIngredientAddition(models.Model):
         recipe: The recipe this ingredient addition is associated with.
         ingredient: The ingredient definition with its properties.
         amount: The amount of the ingredient to add, in grams.
+        units: The units to use in the presentation to the user. Only affects
+            view layer, and not any underlying business logic.
         step_added: The step this ingredient will be added to.
         time_added: Time relative to the end of this step this ingredient will
             be added. Units: seconds.
@@ -457,6 +470,8 @@ class MaltIngredientAddition(models.Model):
     recipe = models.ForeignKey(Recipe)
     ingredient = models.ForeignKey(MaltIngredient, null=True)
     amount = models.FloatField(default=0.0)
+    units = models.CharField(max_length=1, choices=UNITS_CHOICES,
+                             default=UNITS_CHOICES__POUNDS)
     step_added = models.CharField(max_length=1, choices=BREWING_STEP_CHOICES)
     time_added = models.IntegerField(default=0)
 
@@ -468,6 +483,8 @@ class BitteringIngredientAddition(models.Model):
         recipe: The recipe this ingredient addition is associated with.
         ingredient: The ingredient definition with its properties.
         amount: The amount of the ingredient to add, in grams.
+        units: The units to use in the presentation to the user. Only affects
+            view layer, and not any underlying business logic.
         step_added: The step this ingredient will be added to.
         time_added: Time relative to the end of this step this ingredient will
             be added. Units: seconds.
@@ -475,6 +492,8 @@ class BitteringIngredientAddition(models.Model):
     recipe = models.ForeignKey(Recipe)
     ingredient = models.ForeignKey(BitteringIngredient, null=True)
     amount = models.FloatField(default=0.0)
+    units = models.CharField(max_length=1, choices=UNITS_CHOICES,
+                             default=UNITS_CHOICES__OUNCES)
     step_added = models.CharField(max_length=1, choices=BREWING_STEP_CHOICES)
     time_added = models.IntegerField(default=0)
 
