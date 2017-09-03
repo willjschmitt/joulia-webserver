@@ -11,6 +11,8 @@ from django.utils import timezone
 from rest_framework.authtoken.models import Token
 from uuid import uuid4
 
+from joulia import unit_conversions
+
 
 class JouliaControllerRelease(models.Model):
     """A software release for the Joulia Controller software.
@@ -370,6 +372,7 @@ class Recipe(models.Model):
         name: Human readable name for the recipe.
         style: Style for the recipe to conform to.
         company: Brewing Company that owns the recipe.
+        volume: Amount of beer to be brewed. Units: gallons.
         strike_temperature: Temperature to raise Hot Liquor Tun to before strike
             and pumping the Hot Liquor into the Mash Tun. Units: degrees
             Fahrenheit.
@@ -387,6 +390,8 @@ class Recipe(models.Model):
 
     company = models.ForeignKey(BrewingCompany, null=True)
 
+    volume = models.FloatField(default=0.0)
+
     # Temperatures and times.
     strike_temperature = models.FloatField(default=162.0)
     mashout_temperature = models.FloatField(default=170.0)
@@ -396,6 +401,22 @@ class Recipe(models.Model):
 
     def __str__(self):
         return "{}({})".format(self.name, self.style)
+
+    @property
+    def original_gravity(self):
+        """Calculates the original gravity for the recipe based on the malt
+        ingredient additions and the volume of the recipe. Units: specific
+        gravity.
+        """
+        gravity_gallons = 0.0
+        for mash_ingredient_addition in self.maltingredientaddition_set.all():
+            amount_pounds = unit_conversions.grams_to_pounds(
+                mash_ingredient_addition.amount)
+            gravity_offset = (
+                mash_ingredient_addition.ingredient.potential_sg_contribution
+                - 1.0)
+            gravity_gallons += amount_pounds * gravity_offset
+        return gravity_gallons / self.volume + 1.0
 
 
 class Ingredient(models.Model):

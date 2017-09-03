@@ -307,6 +307,18 @@ class RecipeTest(TestCase):
         recipe = models.Recipe.objects.create(name="Foo", style=style)
         self.assertEquals(str(recipe), "Foo(Bar)")
 
+    def test_original_gravity(self):
+        recipe = models.Recipe.objects.create(volume=5.0)
+        us_2row = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.036, name="US 2Row")
+        crystal_malt = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.035, name="Crystal Malt")
+        models.MaltIngredientAddition.objects.create(
+            ingredient=us_2row, amount=4535.92, recipe=recipe)  # 10 pounds.
+        models.MaltIngredientAddition.objects.create(
+            ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
+        self.assertAlmostEqual(recipe.original_gravity, 1.079, 3)
+
 
 class MashPointTest(TestCase):
     """Tests for the MashPoint model."""
