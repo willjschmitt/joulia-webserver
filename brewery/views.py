@@ -10,6 +10,7 @@ from django.http import JsonResponse
 import logging
 from rest_framework import generics
 from rest_framework import status
+from joulia.filters import SearchOrIdFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -124,7 +125,8 @@ class MaltIngredientAPIMixin(APIView):
 class MaltIngredientListView(MaltIngredientAPIMixin,
                              generics.ListCreateAPIView):
     """List and Create REST API view for ``MaltIngredient`` model."""
-    pass
+    filter_backends = (SearchOrIdFilter,)
+    search_fields = ('name',)
 
 
 class MaltIngredientDetailView(MaltIngredientAPIMixin,
@@ -144,7 +146,8 @@ class BitteringIngredientAPIMixin(APIView):
 class BitteringIngredientListView(BitteringIngredientAPIMixin,
                                   generics.ListCreateAPIView):
     """List and Create REST API view for ``BitteringIngredient`` model."""
-    pass
+    filter_backends = (SearchOrIdFilter,)
+    search_fields = ('name',)
 
 
 class BitteringIngredientDetailView(BitteringIngredientAPIMixin,
