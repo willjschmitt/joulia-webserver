@@ -319,6 +319,30 @@ class RecipeTest(TestCase):
             ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
         self.assertAlmostEqual(recipe.original_gravity, 1.079, 3)
 
+    def test_ibu(self):
+        recipe = models.Recipe.objects.create(volume=5.0)
+
+        us_2row = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.036, name="US 2Row")
+        # Enough to get 1.08.
+        models.MaltIngredientAddition.objects.create(
+            ingredient=us_2row, amount=5000.0, recipe=recipe)
+
+        perle = models.BitteringIngredient.objects.create(
+            alpha_acid_weight=0.064, name="Perle")
+        liberty = models.BitteringIngredient.objects.create(
+            alpha_acid_weight=0.046, name="Liberty")
+        models.BitteringIngredientAddition.objects.create(
+            ingredient=perle, amount=42.5243, recipe=recipe, time_added=60.0,
+            step_added=models.BREWING_STEP_CHOICES__BOIL)  # 1.5 ounces.
+        models.BitteringIngredientAddition.objects.create(
+            ingredient=liberty, amount=28.3495, recipe=recipe, time_added=15.0,
+            step_added=models.BREWING_STEP_CHOICES__BOIL)  # 1 ounce.
+        models.BitteringIngredientAddition.objects.create(
+            ingredient=liberty, amount=28.3495, recipe=recipe, time_added=60.0,
+            step_added=models.BREWING_STEP_CHOICES__WHIRLPOOL)  # 1 ounce.
+        self.assertAlmostEqual(recipe.ibu, 31.576, 1)
+
 
 class MashPointTest(TestCase):
     """Tests for the MashPoint model."""
