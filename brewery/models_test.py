@@ -343,6 +343,22 @@ class RecipeTest(TestCase):
             step_added=models.BREWING_STEP_CHOICES__WHIRLPOOL)  # 1 ounce.
         self.assertAlmostEqual(recipe.ibu, 31.576, 1)
 
+    def test_srm(self):
+        recipe = models.Recipe.objects.create(volume=5.0)
+
+        us_2row = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.036, name="US 2Row", color=2.0)
+        crystal_malt = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.035, name="Crystal Malt, 60L",
+            color=60.0)
+
+        models.MaltIngredientAddition.objects.create(
+            ingredient=us_2row, amount=4535.92, recipe=recipe)  # 10 pounds.
+        models.MaltIngredientAddition.objects.create(
+            ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
+
+        self.assertAlmostEqual(recipe.srm, 9.99, 2)
+
 
 class MashPointTest(TestCase):
     """Tests for the MashPoint model."""

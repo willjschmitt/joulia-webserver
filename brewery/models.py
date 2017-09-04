@@ -441,6 +441,17 @@ class Recipe(models.Model):
             ibu += ibu_addition
         return ibu
 
+    @property
+    def srm(self):
+        """Calculates the SRM color of the wort based on the mash ingredient
+        additions. Units: SRM.
+        """
+        mcu = 0.0
+        for addition in self.maltingredientaddition_set.all():
+            mcu += unit_conversions.grams_to_pounds(addition.amount) \
+                * addition.ingredient.color / self.volume
+        return 1.4922 * mcu**0.6859
+
 
 class Ingredient(models.Model):
     """An ingredient, which can be used in a recipe.
