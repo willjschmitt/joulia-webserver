@@ -319,6 +319,10 @@ class RecipeTest(TestCase):
             ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
         self.assertAlmostEqual(recipe.original_gravity, 1.079, 3)
 
+    def test_original_gravity_no_volume(self):
+        recipe = models.Recipe.objects.create(volume=0.0)
+        self.assertEquals(recipe.original_gravity, 0.0)
+
     def test_ibu(self):
         recipe = models.Recipe.objects.create(volume=5.0)
 
@@ -343,6 +347,10 @@ class RecipeTest(TestCase):
             step_added=models.BREWING_STEP_CHOICES__WHIRLPOOL)  # 1 ounce.
         self.assertAlmostEqual(recipe.ibu, 31.576, 1)
 
+    def test_ibu_no_volume(self):
+        recipe = models.Recipe.objects.create(volume=0.0)
+        self.assertEquals(recipe.ibu, 0.0)
+
     def test_srm(self):
         recipe = models.Recipe.objects.create(volume=5.0)
 
@@ -358,6 +366,10 @@ class RecipeTest(TestCase):
             ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
 
         self.assertAlmostEqual(recipe.srm, 9.99, 2)
+
+    def test_srm_no_volume(self):
+        recipe = models.Recipe.objects.create(volume=0.0)
+        self.assertEquals(recipe.srm, 0.0)
 
 
 class MashPointTest(TestCase):

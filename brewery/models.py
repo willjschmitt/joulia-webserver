@@ -409,6 +409,9 @@ class Recipe(models.Model):
         ingredient additions and the volume of the recipe. Units: specific
         gravity.
         """
+        if self.volume == 0.0:
+            return 0.0
+
         gravity_gallons = 0.0
         for mash_ingredient_addition in self.maltingredientaddition_set.all():
             amount_pounds = unit_conversions.grams_to_pounds(
@@ -427,6 +430,9 @@ class Recipe(models.Model):
         Calculation based from formulae in:
         http://howtobrew.com/book/section-1/hops/hop-bittering-calculations
         """
+        if self.volume == 0.0:
+            return 0.0
+
         ibu = 0.0
         for addition in self.bitteringingredientaddition_set.all():
             if addition.step_added != BREWING_STEP_CHOICES__BOIL:
@@ -446,6 +452,9 @@ class Recipe(models.Model):
         """Calculates the SRM color of the wort based on the mash ingredient
         additions. Units: SRM.
         """
+        if self.volume == 0.0:
+            return 0.0
+
         mcu = 0.0
         for addition in self.maltingredientaddition_set.all():
             mcu += unit_conversions.grams_to_pounds(addition.amount) \
