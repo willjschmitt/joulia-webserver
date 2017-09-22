@@ -8,8 +8,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+import math
 from rest_framework.authtoken.models import Token
 from uuid import uuid4
+
+from joulia import unit_conversions
 
 
 class JouliaControllerRelease(models.Model):
@@ -370,6 +373,7 @@ class Recipe(models.Model):
         name: Human readable name for the recipe.
         style: Style for the recipe to conform to.
         company: Brewing Company that owns the recipe.
+        volume: Amount of beer to be brewed. Units: gallons.
         strike_temperature: Temperature to raise Hot Liquor Tun to before strike
             and pumping the Hot Liquor into the Mash Tun. Units: degrees
             Fahrenheit.
@@ -387,6 +391,8 @@ class Recipe(models.Model):
 
     company = models.ForeignKey(BrewingCompany, null=True)
 
+    volume = models.FloatField(default=0.0)
+
     # Temperatures and times.
     strike_temperature = models.FloatField(default=162.0)
     mashout_temperature = models.FloatField(default=170.0)
@@ -396,6 +402,64 @@ class Recipe(models.Model):
 
     def __str__(self):
         return "{}({})".format(self.name, self.style)
+
+    @property
+    def original_gravity(self):
+        """Calculates the original gravity for the recipe based on the malt
+        ingredient additions and the volume of the recipe. Units: specific
+        gravity.
+        """
+        if self.volume == 0.0:
+            return 0.0
+
+        gravity_gallons = 0.0
+        for mash_ingredient_addition in self.maltingredientaddition_set.all():
+            amount_pounds = unit_conversions.grams_to_pounds(
+                mash_ingredient_addition.amount)
+            gravity_offset = (
+                mash_ingredient_addition.ingredient.potential_sg_contribution
+                - 1.0)
+            gravity_gallons += amount_pounds * gravity_offset
+        return gravity_gallons / self.volume + 1.0
+
+    @property
+    def ibu(self):
+        """Calculates the bitterness of the recipe based on the bittering
+        ingredient additions and the volume of the recipe. Units: IBUs.
+
+        Calculation based from formulae in:
+        http://howtobrew.com/book/section-1/hops/hop-bittering-calculations
+        """
+        if self.volume == 0.0:
+            return 0.0
+
+        ibu = 0.0
+        for addition in self.bitteringingredientaddition_set.all():
+            if addition.step_added != BREWING_STEP_CHOICES__BOIL:
+                continue
+            amount_ounces = unit_conversions.grams_to_ounces(addition.amount)
+            aau = amount_ounces * addition.ingredient.alpha_acid_weight * 100.0
+            gravity_utilization = 1.65 * 0.000125**(self.original_gravity - 1.0)
+            time_utilization \
+                = (1.0 - math.exp(-0.04 * addition.time_added)) / 4.15
+            utilization = gravity_utilization * time_utilization
+            ibu_addition = aau * utilization * 75 / self.volume
+            ibu += ibu_addition
+        return ibu
+
+    @property
+    def srm(self):
+        """Calculates the SRM color of the wort based on the mash ingredient
+        additions. Units: SRM.
+        """
+        if self.volume == 0.0:
+            return 0.0
+
+        mcu = 0.0
+        for addition in self.maltingredientaddition_set.all():
+            mcu += unit_conversions.grams_to_pounds(addition.amount) \
+                * addition.ingredient.color / self.volume
+        return 1.4922 * mcu**0.6859
 
 
 class Ingredient(models.Model):
@@ -434,12 +498,17 @@ class BitteringIngredient(Ingredient):
     alpha_acid_weight = models.FloatField(default=0.0)
 
 
+BREWING_STEP_CHOICES__MASH = '0'
+BREWING_STEP_CHOICES__BOIL = '1'
+BREWING_STEP_CHOICES__WHIRLPOOL = '2'
+BREWING_STEP_CHOICES__FERMENTATION = '3'
+BREWING_STEP_CHOICES__CONDITIONING = '4'
 BREWING_STEP_CHOICES = (
-    ('0', 'MASH',),
-    ('1', 'BOIL',),
-    ('2', 'WHIRLPOOL',),
-    ('3', 'FERMENTATION',),
-    ('4', 'CONDITIONING',),
+    (BREWING_STEP_CHOICES__MASH, 'MASH',),
+    (BREWING_STEP_CHOICES__BOIL, 'BOIL',),
+    (BREWING_STEP_CHOICES__WHIRLPOOL, 'WHIRLPOOL',),
+    (BREWING_STEP_CHOICES__FERMENTATION, 'FERMENTATION',),
+    (BREWING_STEP_CHOICES__CONDITIONING, 'CONDITIONING',),
 )
 
 UNITS_CHOICES__POUNDS = '0'
