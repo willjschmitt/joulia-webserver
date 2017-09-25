@@ -110,12 +110,12 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
     def test_subscribe_with_historical_data(self):
         now = timezone.now()
         # Should not see this first point in the response.
-        models.TimeSeriesDataPoint.objects.create(
+        point1 = models.TimeSeriesDataPoint.objects.create(
             sensor=self.sensor, recipe_instance=self.recipe_instance,
             time=now - timedelta(minutes=20))
-        point_new1 = models.TimeSeriesDataPoint.objects.create(
+        point2 = models.TimeSeriesDataPoint.objects.create(
             sensor=self.sensor, recipe_instance=self.recipe_instance)
-        point_new2 = models.TimeSeriesDataPoint.objects.create(
+        point3 = models.TimeSeriesDataPoint.objects.create(
             sensor=self.sensor, recipe_instance=self.recipe_instance)
 
         websocket = yield self.generate_websocket()
@@ -128,10 +128,41 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         websocket.write_message(json_encode(message))
 
         response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, point_new1)
+        self.compare_response_to_model_instance(response, point1)
 
         response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, point_new2)
+        self.compare_response_to_model_instance(response, point2)
+
+        response = yield websocket.read_message()
+        self.compare_response_to_model_instance(response, point3)
+
+    @gen_test
+    def test_subscribe_with_historical_data_filters_based_on_time(self):
+        now = timezone.now()
+        # Should not see this first point in the response.
+        models.TimeSeriesDataPoint.objects.create(
+            sensor=self.sensor, recipe_instance=self.recipe_instance,
+            time=now - timedelta(minutes=20))
+        point1 = models.TimeSeriesDataPoint.objects.create(
+            sensor=self.sensor, recipe_instance=self.recipe_instance)
+        point2 = models.TimeSeriesDataPoint.objects.create(
+            sensor=self.sensor, recipe_instance=self.recipe_instance)
+
+        websocket = yield self.generate_websocket()
+
+        message = {
+            "recipe_instance": self.recipe_instance.pk,
+            "sensor": self.sensor.pk,
+            "subscribe": True,
+            "history_time": -15 * 60,  # Filter to only points in last 15min.
+        }
+        websocket.write_message(json_encode(message))
+
+        response = yield websocket.read_message()
+        self.compare_response_to_model_instance(response, point1)
+
+        response = yield websocket.read_message()
+        self.compare_response_to_model_instance(response, point2)
 
     @gen_test
     def test_updated_data_received_by_subscriber(self):

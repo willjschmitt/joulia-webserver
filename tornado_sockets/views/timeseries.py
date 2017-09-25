@@ -154,14 +154,16 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         """
         recipe_instance_pk = parsed_message['recipe_instance']
         sensor_pk = parsed_message['sensor']
+        history_time = parsed_message.get('history_time', None)
 
         LOGGER.debug('Subscribing')
 
         self._add_subscription(recipe_instance_pk, sensor_pk)
 
-        historical_timedelta = -datetime.timedelta(minutes=15)
+        historical_timedelta = \
+            datetime.timedelta(seconds=history_time) if history_time else None
         self._write_historical_data(sensor_pk, recipe_instance_pk,
-                                    historical_timedelta)
+                                    timedelta=historical_timedelta)
 
     def unsubscribe(self):
         for subscription in self.subscriptions.values():
@@ -174,7 +176,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             self.subscriptions[key] = set()
         self.subscriptions[key].add(self)
 
-    def _write_historical_data(self, sensor_pk, recipe_instance_pk, timedelta):
+    def _write_historical_data(self, sensor_pk, recipe_instance_pk,
+                               timedelta=None):
         """Sends all the data that already exists, limited to now + timedelta.
 
         Args:
@@ -182,16 +185,20 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             recipe_instance_pk: The primary key for the recipe instance to send
                 data.
             timedelta: The amount of time + now to filter against for sending to
-                client.
+                client. Negative indicates data in the past. Positive indicates
+                data in the future, which will be none. If unset (set to None),
+                no time filter will be applied and all historical data will be
+                written.
         """
         sensor = AssetSensor.objects.get(pk=sensor_pk)
         recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
 
-        now = timezone.now()
-        fifteen_minutes_ago = now + timedelta
         data_points = TimeSeriesDataPoint.objects.filter(
-            sensor=sensor, recipe_instance=recipe_instance,
-            time__gt=fifteen_minutes_ago)
+            sensor=sensor, recipe_instance=recipe_instance)
+        if timedelta is not None:
+            now = timezone.now()
+            filter_start_time = now + timedelta
+            data_points = data_points.filter(time__gt=filter_start_time)
         data_points = data_points.order_by("time")
         for data_point in data_points:
             serializer = TimeSeriesDataPointSerializer(data_point)
@@ -220,7 +227,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             new_data_point: An instance of a TimeSeriesDataPoint to be streamed
                 to any subscribers.
         """
-        key = (new_data_point.recipe_instance.pk,new_data_point.sensor.pk)
+        key = (new_data_point.recipe_instance.pk, new_data_point.sensor.pk)
         LOGGER.debug(str(key))
         if key in cls.subscriptions:
             waiter_count = len(cls.subscriptions[key])
