@@ -128,8 +128,9 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
         try:
             self.brewhouse = Brewhouse.objects.get(pk=brewhouse_pk)
         except ObjectDoesNotExist:
-            self.set_status(status.HTTP_404_NOT_FOUND,
-                            'Brewhouse {} not found.'.format(brewhouse_pk))
+            message = 'Brewhouse {} not found.'.format(brewhouse_pk)
+            self.set_status(status.HTTP_404_NOT_FOUND, message)
+            LOGGER.error(message)
             return False
         else:
             return True
