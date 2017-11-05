@@ -46,6 +46,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         handler.request.connection.stream.closed = MagicMock(return_value=False)
         IOLoop.current().run_sync(handler.post)
+        self.assertEquals(handler._status_code, status.HTTP_200_OK)
         self.assertIn(b'{"fake": "result"}', handler._write_buffer)
 
     def test_post_poller_disconnects(self):
@@ -68,6 +69,7 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         handler.request.connection.stream.closed = MagicMock(return_value=True)
         IOLoop.current().run_sync(handler.post)
+        self.assertEquals(handler._status_code, status.HTTP_200_OK)
         self.assertEquals(handler._write_buffer, [])
 
     def test_post_no_auth_not_ok_to_proceed(self):
@@ -151,9 +153,9 @@ class TestRecipeInstanceHandler(JouliaTestCase):
         brewhouse = Brewhouse.objects.create(name="Foo")
         self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         brewhouse_found = self.handler.get_brewhouse()
+        self.assertEquals(self.handler._status_code, status.HTTP_200_OK)
         self.assertTrue(brewhouse_found)
         self.assertEquals(self.handler.brewhouse, brewhouse)
-        self.assertEquals(self.handler._status_code, status.HTTP_200_OK)
 
     def test_get_brewhouse_does_not_exist(self):
         brewhouse = Brewhouse.objects.create(name="Foo")
@@ -235,6 +237,7 @@ class TestRecipeInstanceStartHandler(JouliaTestCase):
 
         self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         IOLoop.current().run_sync(self.handler.post)
+        self.assertEquals(self.handler._status_code, status.HTTP_200_OK)
         self.assertIn(utf8('{{"recipe_instance": {}}}'.format(instance.pk)),
                       self.handler._write_buffer)
 
@@ -263,7 +266,7 @@ class TestRecipeInstanceStartHandler(JouliaTestCase):
             instance.save()
 
         IOLoop.current().run_sync(run_and_add_instance, timeout=2.0)
-
+        self.assertEquals(self.handler._status_code, status.HTTP_200_OK)
         self.assertIn(utf8('{{"recipe_instance": {}}}'.format(instance.pk)),
                       self.handler._write_buffer)
 
@@ -293,6 +296,7 @@ class TestRecipeInstanceEndHandler(JouliaTestCase):
 
         self.handler.request.body_arguments["brewhouse"] = str(brewhouse.pk)
         IOLoop.current().run_sync(self.handler.post, timeout=2.0)
+        self.assertEquals(self.handler._status_code, status.HTTP_200_OK)
         self.assertIn(b'{"recipe_instance": null}', self.handler._write_buffer)
 
     # TODO(willjschmitt): Reenable when we figure out how to solve a future
