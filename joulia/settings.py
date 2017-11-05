@@ -197,7 +197,7 @@ else:
 if not os.path.exists(LOGGING_DIR):
     os.makedirs(LOGGING_DIR)
 
-LOGGING_CONFIG = {
+LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
