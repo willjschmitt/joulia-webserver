@@ -28,10 +28,12 @@ class JouliaControllerReleaseApiMixin(APIView):
     """
     serializer_class = serializers.JouliaControllerReleaseSerializers
     queryset = models.JouliaControllerRelease.objects.all()
+    permission_classes = (
+        IsAuthenticated, permissions.IsContinuousIntegrationToEdit)
 
 
 class JouliaControllerReleaseListView(JouliaControllerReleaseApiMixin,
-                                      generics.ListAPIView):
+                                      generics.ListCreateAPIView):
     """List REST API view for ``JouliaControllerRelease`` model."""
     # TODO(willjschmitt): Add Create functionality for release software to
     # programmatically update this.
