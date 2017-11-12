@@ -42,7 +42,7 @@ class IsContinuousIntegrationToEditTest(TestCase):
     def test_has_permission_fails_with_bad_user(self):
         permission = permissions.IsContinuousIntegrationToEdit()
         user = User.objects.create(username="user")
-        group = Group.objects.create(
+        group = Group.objects.get(
             name=permissions.CONTINUOUS_INTEGRATION_GROUP_NAME)
         group.user_set.add(user)
         request = Mock()
