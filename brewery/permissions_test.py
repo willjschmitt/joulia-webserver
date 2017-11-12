@@ -9,6 +9,49 @@ from brewery import models
 from brewery import permissions
 
 
+class IsContinuousIntegrationToEditTest(TestCase):
+    """Tests for the IsContinuousIntegrationToEdit permissions class."""
+
+    # def has_permission(self, request, view):
+    #     if request.method in SAFE_METHODS:
+    #         return True
+    #
+    #     if not request.user:
+    #         return False
+    #
+    #     return request.user.group_set.filter(
+    #         name=self._CONTINUOUS_INTEGRATION_GROUP_NAME).exists()
+
+    def test_has_permission_with_get(self):
+        permission = permissions.IsContinuousIntegrationToEdit()
+        user = User.objects.create(username="user")
+        request = Mock()
+        request.user = user
+        request.method = 'GET'
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+    def test_has_permission_fails_with_no_user(self):
+        permission = permissions.IsContinuousIntegrationToEdit()
+        request = Mock()
+        request.method = 'POST'
+        request.user = None
+        view = None
+        self.assertFalse(permission.has_permission(request, view))
+
+    def test_has_permission_fails_with_bad_user(self):
+        permission = permissions.IsContinuousIntegrationToEdit()
+        user = User.objects.create(username="user")
+        group = Group.objects.get(
+            name=permissions.CONTINUOUS_INTEGRATION_GROUP_NAME)
+        group.user_set.add(user)
+        request = Mock()
+        request.user = user
+        request.method = 'POST'
+        view = None
+        self.assertTrue(permission.has_permission(request, view))
+
+
 class IsMemberTest(TestCase):
     """Tests for IsMember permissions class."""
 

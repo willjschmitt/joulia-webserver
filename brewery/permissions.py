@@ -7,6 +7,10 @@ from rest_framework.permissions import SAFE_METHODS
 from brewery import models
 
 
+# Group name for handling permissions related to continuous integration.
+CONTINUOUS_INTEGRATION_GROUP_NAME = "continuous_integration"
+
+
 class IsAdminToEdit(permissions.BasePermission):
     """Must be a superuser to edit, but get accesses are okay for everyone."""
     def has_permission(self, request, view):
@@ -14,6 +18,22 @@ class IsAdminToEdit(permissions.BasePermission):
             return True
 
         return request.user and request.user.is_superuser
+
+
+class IsContinuousIntegrationToEdit(permissions.BasePermission):
+    """Must be a member of the continuous integration group to be able to make
+    modifications, but get accesses are okay for everyone.
+    """
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+
+        if not request.user:
+            return False
+
+        return request.user.groups.filter(
+            name=CONTINUOUS_INTEGRATION_GROUP_NAME).exists()
 
 
 class IsMember(permissions.BasePermission):
