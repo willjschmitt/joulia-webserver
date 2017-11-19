@@ -10,6 +10,11 @@ urlpatterns = [
     url(r"api/joulia_controller_release/(?P<pk>[0-9]+)/$",
         views.JouliaControllerReleaseDetailView.as_view()),
 
+    url(r"api/brewing_state/$",
+        views.BrewingStateListCreateView.as_view()),
+    url(r"api/brewing_state/(?P<pk>[0-9]+)/$",
+        views.BrewingStateDetailView.as_view()),
+
     url(r"api/brewingCompany/$", views.BrewingCompanyListView.as_view()),
     url(r"api/brewingCompany/(?P<pk>[0-9]+)/$",
         views.BrewingCompanyDetailView.as_view()),

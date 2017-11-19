@@ -12,6 +12,13 @@ class JouliaControllerReleaseSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class BrewingStateSerializer(serializers.ModelSerializer):
+    """Standard serializer for BrewingState model."""
+    class Meta:
+        model = models.BrewingState
+        fields = '__all__'
+
+
 class BrewingCompanySerializer(serializers.ModelSerializer):
     """Standard serializer for BrewingCompany model."""
     class Meta:

@@ -28,6 +28,27 @@ class JouliaControllerRelease(models.Model):
     release_time = models.DateTimeField(default=timezone.now)
 
 
+class BrewingState(models.Model):
+    """A state the joulia-controller can be in for a given software release.
+
+    Defines the enum value for what a state is, the number position it is in the
+    brewing process, and its description.
+
+    Attributes:
+        software_release: the joulia-controller release this state is
+            associated with.
+        index: the 0-based index for ordering states within a software_release.
+            Index must be unique for a software_release.
+    """
+    software_release = models.ForeignKey(JouliaControllerRelease)
+    index = models.IntegerField()
+    name = models.TextField()
+    description = models.TextField(default="")
+
+    class Meta:
+        unique_together = ('software_release', 'index',)
+
+
 class InvalidUserError(Exception):
     """An error for an invalid association of a user with a BrewingCompany."""
     pass

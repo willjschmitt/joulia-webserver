@@ -46,6 +46,30 @@ class JouliaControllerReleaseDetailView(JouliaControllerReleaseApiMixin,
     pass
 
 
+class BrewingStateAPIMixin(APIView):
+    """Common REST API view information for ``BrewingState`` model."""
+    serializer_class = serializers.BrewingStateSerializer
+    queryset = models.BrewingState.objects.all().order_by('index')
+    filter_fields = ('id', 'software_release',)
+    permission_classes = (
+        IsAuthenticated, permissions.IsContinuousIntegrationToEdit)
+
+
+class BrewingStateListCreateView(JouliaControllerReleaseApiMixin,
+                                 generics.ListCreateAPIView):
+    """List/create REST API view for ``BrewingState`` model.
+
+    Ordering is guaranteed to be sorted by index in the List view.
+    """
+    pass
+
+
+class BrewingStateDetailView(JouliaControllerReleaseApiMixin,
+                             generics.RetrieveAPIView):
+    """Get REST API view for ``BrewingState`` model."""
+    pass
+
+
 class BrewingCompanyApiMixin(APIView):
     """Common REST API view information for ``BrewingCompany`` model."""
     serializer_class = serializers.BrewingCompanySerializer
