@@ -667,12 +667,23 @@ class AssetSensor(models.Model):
             kettle.
         brewery: The brewhouse the sensor is associated with.
     """
+    VARIABLE_TYPE_CHOICES = (
+        ("value", "value"),
+        ("override", "override"),
+    )
+
     name = models.CharField(max_length=64)
     brewhouse = models.ForeignKey(Brewhouse, null=True)
+    variable_type = models.CharField(max_length=32,
+                                     choices=VARIABLE_TYPE_CHOICES,
+                                     default="value")
 
     def __str__(self):
         brewhouse = self.brewhouse.name if self.brewhouse is not None else None
         return "{}-{}".format(brewhouse, self.name)
+
+    class Meta:
+        unique_together = ('name', 'brewhouse', 'variable_type',)
 
 
 class TimeSeriesDataPoint(models.Model):
