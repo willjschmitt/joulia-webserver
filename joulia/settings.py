@@ -1,8 +1,13 @@
 """Django settings for joulia-webserver project.
 """
 
+import logging
 import os
 import socket
+
+from raven.handlers.logging import SentryHandler
+from raven.conf import setup_logging
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -233,3 +238,16 @@ LOGGING = {
         },
     },
 }
+
+if PRODUCTION_HOST:
+    sentry_dsn = os.environ['SENTRY_ADDRESS']
+    handler = SentryHandler(sentry_dsn)
+    handler.setLevel(logging.WARNING)
+    setup_logging(handler)
+
+    LOGGING['handlers']['sentry'] = {
+        'level': 'ERROR',
+        'class': 'raven.handlers.logging.SentryHandler',
+        'dsn': sentry_dsn,
+    }
+    LOGGING['loggers']['']['handlers'].append('sentry')
