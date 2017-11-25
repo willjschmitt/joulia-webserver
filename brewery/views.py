@@ -55,7 +55,7 @@ class BrewingStateAPIMixin(APIView):
         IsAuthenticated, permissions.IsContinuousIntegrationToEdit)
 
 
-class BrewingStateListCreateView(JouliaControllerReleaseApiMixin,
+class BrewingStateListCreateView(BrewingStateAPIMixin,
                                  generics.ListCreateAPIView):
     """List/create REST API view for ``BrewingState`` model.
 
@@ -64,7 +64,7 @@ class BrewingStateListCreateView(JouliaControllerReleaseApiMixin,
     pass
 
 
-class BrewingStateDetailView(JouliaControllerReleaseApiMixin,
+class BrewingStateDetailView(BrewingStateAPIMixin,
                              generics.RetrieveAPIView):
     """Get REST API view for ``BrewingState`` model."""
     pass
