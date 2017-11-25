@@ -328,6 +328,8 @@ class TimeSeriesIdentifyHandler(APIView):
                 if recipe_instance is not submitted.
             name: Name for the AssetSensor to be used in the time series data.
                 See AssetSensor for more information on naming.
+            variable_type: Type of AssetSensor to be used (e.g. "value" or
+                "override"). Defaults to 'value'.
 
         Returns:
             JsonResponse with the pk to the sensor as the property "sensor".
@@ -335,6 +337,7 @@ class TimeSeriesIdentifyHandler(APIView):
             create a new AssetSensor.
         """
         name = request.data['name']
+        variable_type = request.data.get('variable_type', 'value')
 
         if 'recipe_instance' in request.data:
             recipe_instance_id = request.data['recipe_instance']
@@ -353,14 +356,15 @@ class TimeSeriesIdentifyHandler(APIView):
         # See if we can get an existing AssetSensor.
         try:
             sensor = models.AssetSensor.objects.get(name=name,
-                                                    brewhouse=brewhouse)
+                                                    brewhouse=brewhouse,
+                                                    variable_type=variable_type)
             status_code = status.HTTP_200_OK
         # Otherwise create one for recording data
         except ObjectDoesNotExist:
             LOGGER.debug('Creating new asset sensor %s for asset %s',
                          name, brewhouse)
-            sensor = models.AssetSensor(name=name, brewhouse=brewhouse)
-            sensor.save()
+            sensor = models.AssetSensor.objects.create(
+                name=name, brewhouse=brewhouse, variable_type=variable_type)
             status_code = status.HTTP_201_CREATED
 
         response = JsonResponse({'sensor': sensor.pk})

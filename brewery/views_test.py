@@ -194,6 +194,24 @@ class TimeSeriesIdentifyHandlerTest(BreweryTestBase):
         response_data = json.loads(response.content.decode('utf8'))
         self.assertEqual(response_data['sensor'], sensor.pk)
 
+    def test_existing_value_sensor(self):
+        request = Mock(user=self.good_user)
+
+        sensor = models.AssetSensor.objects.create(
+            name="existing_sensor", brewhouse=self.brewhouse,
+            variable_type="value")
+        recipe_instance = models.RecipeInstance.objects.create(
+            recipe=self.recipe, brewhouse=self.brewhouse, active=True)
+
+        request.data = {'recipe_instance': recipe_instance.pk,
+                        'name': "existing_sensor",
+                        'variable_type': 'override'}
+        response = views.TimeSeriesIdentifyHandler.post(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response_data = json.loads(response.content.decode('utf8'))
+        self.assertNotEqual(response_data['sensor'], sensor.pk)
+
     def test_nonexisting_sensor(self):
         request = Mock(user=self.good_user)
         pre_sensorcount = models.AssetSensor.objects.count()
