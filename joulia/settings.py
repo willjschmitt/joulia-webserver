@@ -74,7 +74,6 @@ MIDDLEWARE = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'joulia.http.ConvertHTTPExceptionsMiddleware',
-    'joulia.log_requests.HeadersLoggingMiddleware',
 )
 
 ROOT_URLCONF = 'joulia.urls'
