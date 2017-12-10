@@ -7,38 +7,40 @@
 #  * DOCKER_USERNAME
 #  * DOCKER_PASSWORD
 #  * TRAVIS_BUILD_NUMBER
+echo "Deploying Docker image."
+
 DOCKER_REPO="willjschmitt/joulia-webserver"
 COMMIT="${TRAVIS_COMMIT}::6"
 
 echo "Logging into Docker"
 docker login -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}"
 if [ $? -ne 0 ]; then
-  echo "Failed to log into Docker."
+  >&2 echo "Failed to log into Docker."
   exit -1
 fi
 
 echo "Building Docker image."
 docker build -f Dockerfile -t "${DOCKER_REPO}:${COMMIT}" .
 if [ $? -ne 0 ]; then
-  echo "Failed to build Docker image."
+  >&2 echo "Failed to build Docker image."
   exit -1
 fi
 
 echo "Tagging Docker image."
 docker tag "${DOCKER_REPO}:${COMMIT}" "${DOCKER_REPO}:latest"
 if [ #? -ne 0 ]; then
-  echo "Failed to tag Docker image with latest tag."
+  >&2 echo "Failed to tag Docker image with latest tag."
   exit -1
 fi
 docker tag "${DOCKER_REPO}:${COMMIT}" "${DOCKER_REPO}:travis-${TRAVIS_BUILD_NUMBER}"
 if [ #? -ne 0 ]; then
-  echo "Failed to tag Docker image with travis build number."
+  >&2 echo "Failed to tag Docker image with travis build number."
   exit -1
 fi
 
 echo "Pushing Docker image."
 docker push "${DOCKER_REPO}"
 if [ #? -ne 0 ]; then
-  echo "Failed to push Docker image to Docker."
+  >&2 echo "Failed to push Docker image to Docker."
   exit -1
 fi
