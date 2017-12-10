@@ -35,9 +35,6 @@ deploy:
     on:
       branch: master
   - provider: script
-    script:
-      - echo "Docker deployment."
-      - ls -l
-      - deploy_docker.sh
+    script: ls -l
     on:
       branch: master
