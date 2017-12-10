@@ -14,8 +14,8 @@ COMMIT=${TRAVIS_COMMIT::6}
 echo Deploying to $DOCKER_REPO at commit $COMMIT
 
 echo Logging into Docker as $DOCKER_USERNAME
-echo running: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+echo running: docker login -u $DOCKER_USERNAME -p "${DOCKER_PASSWORD}"
+docker login -u $DOCKER_USERNAME -p "${DOCKER_PASSWORD}"
 if [ $? -ne 0 ]; then
   >&2 echo "Failed to log into Docker."
   exit -1
