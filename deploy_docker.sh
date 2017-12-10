@@ -12,3 +12,16 @@ echo "Deploying Docker image."
 DOCKER_REPO="willjschmitt/joulia-webserver"
 COMMIT="${TRAVIS_COMMIT}::6"
 
+echo "Logging into Docker"
+docker login -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}"
+if [ $? -ne 0 ]; then
+  >&2 echo "Failed to log into Docker."
+  exit -1
+fi
+
+echo "Building Docker image."
+docker build -f Dockerfile -t "${DOCKER_REPO}:${COMMIT}" .
+if [ $? -ne 0 ]; then
+  >&2 echo "Failed to build Docker image."
+  exit -1
+fi
