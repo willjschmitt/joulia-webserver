@@ -8,6 +8,7 @@ cache:
   fast_finish: true
 services:
   - mysql
+  - docker
 install:
   - travis_retry pip install -r requirements.txt
   - travis_retry pip install mysqlclient
