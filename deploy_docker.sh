@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Deploys the application to Docker by building the docker image, and pushing it
 # to Docker. Tags the image with the first 6 characters of the commit, "latest",
 # and the Travis build number.
