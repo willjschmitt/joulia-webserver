@@ -25,3 +25,22 @@ if [ $? -ne 0 ]; then
   >&2 echo "Failed to build Docker image."
   exit -1
 fi
+
+echo "Tagging Docker image."
+docker tag "${DOCKER_REPO}:${COMMIT}" "${DOCKER_REPO}:latest"
+if [ #? -ne 0 ]; then
+  >&2 echo "Failed to tag Docker image with latest tag."
+  exit -1
+fi
+docker tag "${DOCKER_REPO}:${COMMIT}" "${DOCKER_REPO}:travis-${TRAVIS_BUILD_NUMBER}"
+if [ #? -ne 0 ]; then
+  >&2 echo "Failed to tag Docker image with travis build number."
+  exit -1
+fi
+
+echo "Pushing Docker image."
+docker push "${DOCKER_REPO}"
+if [ #? -ne 0 ]; then
+  >&2 echo "Failed to push Docker image to Docker."
+  exit -1
+fi
