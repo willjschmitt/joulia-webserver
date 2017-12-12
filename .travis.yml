@@ -17,7 +17,7 @@ env:
     - GCLOUD_APPLICATION_CREDENTIALS="${PWD}/gcloud-secret.json"
     - GCLOUD_CLUSTER_NAME="joulia"
 before_install:
-  - openssl aes-256-cbc -K $encrypted_b706293ba7ac_key -iv $encrypted_b706293ba7ac_iv -in gcloud-secret.json.enc -out gcloud-secret.json -d
+  - openssl aes-256-cbc -K $encrypted_c2865a050002_key -iv $encrypted_c2865a050002_iv -in gcloud-secret.json.enc -out gcloud-secret.json -d
   - ./gcloud-sdk-install.sh
   - source /home/travis/.bashrc
   - ./gcloud-sdk-configure.sh
