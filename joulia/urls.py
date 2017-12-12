@@ -6,7 +6,6 @@ from django.contrib import admin
 import social_django.views as social_views
 
 import brewery.views as brewery_views
-from joulia import views
 
 urlpatterns = [
     url(r'^', include('django.contrib.auth.urls')),
@@ -22,6 +21,4 @@ urlpatterns = [
     url('', include('social_django.urls', namespace='social')),
     url(r'^login/google-oauth2/$', social_views.auth,
         name='login-google-oauth2'),
-
-    url(r'^$', views.hello_world),
 ]

@@ -43,12 +43,21 @@ def joulia_app():
     wsgi_app = tornado.wsgi.WSGIContainer(
         django.core.handlers.wsgi.WSGIHandler())
     tornado_app = tornado.web.Application(
-        tornado_sockets.urls.urlpatterns
+        [(r'^$', HealthCheckHandler)]
+        + tornado_sockets.urls.urlpatterns
         + [('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app))],
         **settings
     )
 
     return tornado_app
+
+
+class HealthCheckHandler(tornado.web.RequestHandler):
+    """A simple handler to return 200 status for health checks."""
+
+    def get(self):
+        self.write("Hello, world")
+
 
 if __name__ == "__main__":
     main()
