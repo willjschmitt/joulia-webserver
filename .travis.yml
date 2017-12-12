@@ -50,7 +50,7 @@ deploy:
     script: "./deploy_docker.sh"
     on:
       branch: master
-  - provider:
+  - provider: script
     script: "./deploy_kubernetes.sh"
     on:
       branch: master
