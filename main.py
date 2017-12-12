@@ -43,7 +43,7 @@ def joulia_app():
     wsgi_app = tornado.wsgi.WSGIContainer(
         django.core.handlers.wsgi.WSGIHandler())
     tornado_app = tornado.web.Application(
-        [(r'^$', HealthCheckHandler)]
+        [(r'/', HealthCheckHandler)]
         + tornado_sockets.urls.urlpatterns
         + [('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app))],
         **settings
