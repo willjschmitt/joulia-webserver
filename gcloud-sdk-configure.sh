@@ -5,4 +5,4 @@ gcloud auth activate-service-account --key-file "${GCLOUD_APPLICATION_CREDENTIAL
 gcloud config set project "${GCLOUD_PROJECT_ID}"
 gcloud config set compute/zone "${GCLOUD_ZONE}"
 
-gcloud container clusters get-credentials "${GCLOUD_CLUSTER_NAME}
+gcloud container clusters get-credentials "${GCLOUD_CLUSTER_NAME}"
