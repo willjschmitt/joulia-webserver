@@ -31,6 +31,7 @@ ALLOWED_HOSTS = [
     'example.com',
     'brew.example.com',
     '127.0.0.1',
+    '35.227.220.66',
     '[::1]',
 ]
 
