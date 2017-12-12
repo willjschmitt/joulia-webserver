@@ -2,14 +2,11 @@
 """
 
 from django.conf.urls import url, include
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.views.generic import TemplateView
-from django.views.generic.base import RedirectView
 import social_django.views as social_views
 
 import brewery.views as brewery_views
+from joulia import views
 
 urlpatterns = [
     url(r'^', include('django.contrib.auth.urls')),
@@ -24,5 +21,7 @@ urlpatterns = [
 
     url('', include('social_django.urls', namespace='social')),
     url(r'^login/google-oauth2/$', social_views.auth,
-        name='login-google-oauth2')
+        name='login-google-oauth2'),
+
+    url(r'^$', views.hello_world),
 ]
