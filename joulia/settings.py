@@ -128,6 +128,17 @@ if 'RDS_HOSTNAME' in os.environ:
             'PORT': os.environ['RDS_PORT'],
         }
     }
+elif 'GCLOUD_SQL_HOSTNAME' in os.environ:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ['GCLOUD_SQL_NAME'],
+            'USER': os.environ['GCLOUD_SQL_USERNAME'],
+            'PASSWORD': os.environ['GCLOUD_SQL_PASSWORD'],
+            'HOST': os.environ['GCLOUD_SQL_HOSTNAME'],
+            'PORT': os.environ['GCLOUD_SQL_PORT'],
+        }
+    }
 elif not PRODUCTION_HOST:
     DATABASES = {
         'default': {

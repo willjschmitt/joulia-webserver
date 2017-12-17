@@ -1,3 +1,8 @@
+# Changes to anything in this file should be manually applied, since Travis will
+# only update the joulia-webserver image version when things are updated rather
+# than making mods to this file and applying them. This is useful, since it
+# means being able to rollback failed deployments easier based on commit hashes
+# rather than every deployment using :latest.
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -22,3 +27,66 @@ spec:
         image: willjschmitt/joulia-webserver:latest
         ports:
         - containerPort: 8888
+        env:
+          - name: JOULIA_PRODUCTION
+            value: "true"
+          - name: GCLOUD_SQL_HOSTNAME
+            value: "127.0.0.1"
+          - name: GCLOUD_SQL_PORT
+            value: "3306"
+          - name: GCLOUD_SQL_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: joulia-webserver-sql-db-credentials
+                key: user
+          - name: GCLOUD_SQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: joulia-webserver-sql-db-credentials
+                key: password
+          - name: GCLOUD_SQL_NAME
+            # This is a legacy name from AWS RDS. I expect to change this
+            # eventually.
+            value: ebdb
+          - name: DJANGO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: joulia-webserver-django
+                key: django_secret_key
+          - name: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+            valueFrom:
+              secretKeyRef:
+                name: joulia-webserver-google-oauth
+                key: google_oauth2_key
+          - name: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: joulia-webserver-google-oauth
+                key: google_oauth2_secret
+          - name: SENTRY_ADDRESS
+            valueFrom:
+              secretKeyRef:
+                name: joulia-webserver-sentry
+                key: sentry_address
+      - name: joulia-webserver-sql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        command: ["/cloud_sql_proxy", "--dir=/cloudsql",
+                  "-instances=core-song-155902:us-central1:joulia-webserver=tcp:3306",
+                  "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: joulia-webserver-sql-instance-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
+          - name: ssl-certs
+            mountPath: /etc/ssl/certs
+          - name: cloudsql
+            mountPath: /cloudsql
+      volumes:
+        - name: joulia-webserver-sql-instance-credentials
+          secret:
+            secretName: joulia-webserver-sql-instance-credentials
+        - name: cloudsql
+          emptyDir:
+        - name: ssl-certs
+          hostPath:
+            path: /etc/ssl/certs
