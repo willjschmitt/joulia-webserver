@@ -2,6 +2,8 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: joulia-webserver
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "joulia-webserver-ingress"
 spec:
   backend:
     serviceName: joulia-webserver
