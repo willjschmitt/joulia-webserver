@@ -37,15 +37,6 @@ notifications:
   email: false
   slack: $SLACK_TOKEN
 deploy:
-  - provider: elasticbeanstalk
-    access_key_id: $AWS_ACCESS_KEY
-    secret_access_key: $AWS_SECRET_ACCESS_KEY
-    region: "us-east-1"
-    app: "joulia-webserver"
-    env: "joulia-webserver-prod"
-    bucket_name: "joulia-webserver-builds"
-    on:
-      branch: master
   - provider: script
     script: "./deploy_docker.sh"
     on:
