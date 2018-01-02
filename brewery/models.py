@@ -430,9 +430,14 @@ class Brewhouse(models.Model):
         self.simulated_secret_name = '{}-{}'.format(
             self.BREWHOUSE_SIMULATION_SECRET_BASE, uuid)
 
-        secret = kubernetes.client.V1Secret(string_data={
-            self.BREWHOUSE_SIMULATION_SECRET_KEY: self.token.key,
-        })
+        secret = kubernetes.client.V1Secret(
+            metadata=kubernetes.client.V1ObjectMeta(
+                name=self.simulated_secret_name
+            ),
+            string_data={
+                self.BREWHOUSE_SIMULATION_SECRET_KEY: self.token.key,
+            }
+        )
         secret_client = kubernetes.client.CoreV1Api()
         if settings.PRODUCTION_HOST:
             secret_resp = secret_client.create_namespaced_secret(
