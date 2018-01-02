@@ -1,6 +1,7 @@
 """Models for Brewery App. Represents brewing locations, systems, and equipment.
 """
 
+import base64
 from datetime import datetime
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
@@ -431,7 +432,8 @@ class Brewhouse(models.Model):
             self.BREWHOUSE_SIMULATION_SECRET_BASE, uuid)
 
         secret = kubernetes.client.V1Secret(data={
-            self.BREWHOUSE_SIMULATION_SECRET_KEY: self.simulated_secret_name
+            self.BREWHOUSE_SIMULATION_SECRET_KEY: base64.b64encode(
+                self.token.key.encode())
         })
         secret_client = kubernetes.client.CoreV1Api()
         if settings.PRODUCTION_HOST:
