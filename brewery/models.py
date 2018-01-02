@@ -431,9 +431,8 @@ class Brewhouse(models.Model):
         self.simulated_secret_name = '{}-{}'.format(
             self.BREWHOUSE_SIMULATION_SECRET_BASE, uuid)
 
-        secret = kubernetes.client.V1Secret(data={
-            self.BREWHOUSE_SIMULATION_SECRET_KEY: base64.b64encode(
-                self.token.key.encode())
+        secret = kubernetes.client.V1Secret(string_data={
+            self.BREWHOUSE_SIMULATION_SECRET_KEY: self.token.key.encode,
         })
         secret_client = kubernetes.client.CoreV1Api()
         if settings.PRODUCTION_HOST:
