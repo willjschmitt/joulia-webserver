@@ -469,16 +469,22 @@ class Brewhouse(models.Model):
             kind='Deployment',
             metadata=kubernetes.client.V1ObjectMeta(
                 name=self.simulated_deployment_name,
-                labels={'app': self.simulated_deployment_name}
+                labels={
+                    'app': self.BREWHOUSE_SIMULATION_DEPLOYMENT_BASE,
+                }
             ),
             spec=kubernetes.client.ExtensionsV1beta1DeploymentSpec(
                 replicas=1,
                 selector=kubernetes.client.V1LabelSelector(
-                    match_labels={'app': self.simulated_deployment_name}
+                    match_labels={
+                        'app': self.BREWHOUSE_SIMULATION_DEPLOYMENT_BASE,
+                    }
                 ),
                 template=kubernetes.client.V1PodTemplateSpec(
                     metadata=kubernetes.client.V1ObjectMeta(
-                        labels={'app': self.simulated_deployment_name},
+                        labels={
+                            'app': self.BREWHOUSE_SIMULATION_DEPLOYMENT_BASE
+                        },
                     ),
                     spec=kubernetes.client.V1PodSpec(
                         containers=[
