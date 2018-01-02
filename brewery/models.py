@@ -8,11 +8,19 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+import kubernetes
+import logging
 import math
 from rest_framework.authtoken.models import Token
 from uuid import uuid4
 
 from joulia import unit_conversions
+
+
+LOGGER = logging.getLogger(__name__)
+
+# Kubernetes namespace for making deployments to.
+KUBERNETES_NAMESPACE = 'default'
 
 
 class JouliaControllerRelease(models.Model):
@@ -283,7 +291,19 @@ class Brewhouse(models.Model):
         mash_tun: Vessel for mashing grain into wort.
         main_pump: The main pump for moving liquid between vessels and
             recirculating wort during mash.
+        simulated: Boolean indicating if this is a simulated brewhouse.
+        simulated_deployment_name: The name of the joulia-controller deployment
+            in kubernetes.
+        simulated_secret_name: The name of the joulia-controller auth token
+            secret in kubernetes.
     """
+
+    BREWHOUSE_SIMULATION_DEPLOYMENT_BASE = 'joulia-controller-simulated'
+    BREWHOUSE_SIMULATION_SECRET_BASE = 'joulia-controller-simulated'
+    BREWHOUSE_SIMULATION_SECRET_KEY = 'joulia_webserver_authtoken'
+    BREWHOUSE_SIMULATION_IMAGE_NAME = (
+        'willjschmitt/joulia-controller:latest-simulated')
+
     name = models.CharField(max_length=64)
     brewery = models.ForeignKey(Brewery, null=True)
 
@@ -296,6 +316,11 @@ class Brewhouse(models.Model):
     boil_kettle = models.ForeignKey(HotLiquorTun, null=True)
     mash_tun = models.ForeignKey(MashTun, null=True)
     main_pump = models.ForeignKey(Pump, null=True)
+
+    # Simulated details.
+    simulated = models.BooleanField(default=False)
+    simulated_deployment_name = models.CharField(max_length=512, null=True)
+    simulated_secret_name = models.CharField(max_length=512, null=True)
 
     @property
     def active(self):
@@ -369,7 +394,135 @@ class Brewhouse(models.Model):
             raise InvalidUserError("Token associated with Brewhouse {} is not"
                                    " associated with user.")
 
+        if self.simulated:
+            self._create_simulated_controller()
+
         super(Brewhouse, self).save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        super(Brewhouse, self).delete(using, keep_parents)
+
+        if self.simulated:
+            self._delete_simulated_controller()
+
+    def _create_simulated_controller(self):
+        """Creates a kubernetes deployment for a simulated controller."""
+        # If the deployment name is already set, we have already created a
+        # deployment and do not need to do it again.
+        if self.simulated_deployment_name is not None:
+            return
+        LOGGER.info('Creating simulated brewery for %s.', self)
+        uuid = uuid4()
+        self._create_kubernetes_secret(uuid)
+        self._create_kubernetes_deployment(uuid)
+
+    def _create_kubernetes_secret(self, uuid):
+        """Creates a new kubernetes secret.
+
+        Uses the secret base and provided uuid.
+
+        Args:
+            uuid: The UUID to append to the secret base for its name.
+        """
+        self.simulated_secret_name = '{}-{}'.format(
+            self.BREWHOUSE_SIMULATION_SECRET_BASE, uuid)
+
+        secret = kubernetes.client.V1Secret(data={
+            self.BREWHOUSE_SIMULATION_SECRET_KEY: self.simulated_secret_name
+        })
+        secret_client = kubernetes.client.CoreV1Api()
+        secret_resp = secret_client.create_namespaced_secret(
+            KUBERNETES_NAMESPACE, secret)
+        LOGGER.info('Created secret response: %s', secret_resp)
+
+    def _create_kubernetes_deployment(self, uuid):
+        """Creates a new kubernetes deployment.
+
+        Uses the deployment base and provided uuid.
+
+        Args:
+            uuid: The UUID to append to the deployment base for its name.
+        """
+        self.simulated_deployment_name = '{}-{}'.format(
+            self.BREWHOUSE_SIMULATION_DEPLOYMENT_BASE, uuid)
+
+        secret_env_var = kubernetes.client.V1EnvVar(
+            name='JOULIA_WEBSERVER_AUTHTOKEN',
+            value_from=kubernetes.client.V1EnvVarSource(
+                secret_key_ref=kubernetes.client.V1SecretKeySelector(
+                    name=self.simulated_secret_name,
+                    key=self.BREWHOUSE_SIMULATION_SECRET_KEY
+                )
+            )
+        )
+        deployment = kubernetes.client.AppsV1beta1Deployment(
+            api_version='extensions/v1beta1',
+            kind='deployment',
+            metadata=kubernetes.client.V1ObjectMeta(
+                name=self.simulated_deployment_name,
+                labels={'app': self.simulated_deployment_name}
+            ),
+            spec=kubernetes.client.V1beta2DeploymentSpec(
+                replicas=1,
+                selector=kubernetes.client.V1LabelSelector(
+                    match_labels={'app': self.simulated_deployment_name}
+                ),
+                template=kubernetes.client.V1PodTemplateSpec(
+                    metadata=kubernetes.client.V1ObjectMeta(
+                        labels={'app': self.simulated_deployment_name},
+                    ),
+                    spec=kubernetes.client.V1PodSpec(
+                        containers=[
+                            kubernetes.client.V1Container(
+                                name=self.simulated_deployment_name,
+                                image=self.BREWHOUSE_SIMULATION_IMAGE_NAME,
+                                image_pull_policy='Always',
+                                ports=[
+                                    kubernetes.client.V1ContainerPort(
+                                        container_port=8888
+                                    ),
+                                ],
+                                env=[
+                                    kubernetes.client.V1EnvVar(
+                                        name='JOULIA_WEBSERVER_HOST',
+                                        value='joulia.io'
+                                    ),
+                                    kubernetes.client.V1EnvVar(
+                                        name='JOULIA_WEBSERVER_HTTP_PROTOCOL',
+                                        value='https'
+                                    ),
+                                    kubernetes.client.V1EnvVar(
+                                        name='JOULIA_WEBSERVER_WS_PROTOCOL',
+                                        value='wss'
+                                    ),
+                                    secret_env_var,
+                                ]
+                            )
+                        ]
+                    )
+                )
+            )
+        )
+
+        deployment_client = kubernetes.client.AppsV1beta1Api()
+        deployment_resp = deployment_client.create_namespaced_deployment(
+            KUBERNETES_NAMESPACE, deployment)
+        LOGGER.info('Created deployment response: %s', deployment_resp)
+
+    def _delete_simulated_controller(self):
+        deployment_client = kubernetes.client.AppsV1beta1Api()
+        empty_options = kubernetes.client.V1DeleteOptions()
+        deployment_resp = deployment_client.delete_namespaced_deployment(
+            self.simulated_deployment_name, KUBERNETES_NAMESPACE, empty_options)
+        LOGGER.info('Deleted deployment response: %s.', deployment_resp)
+        self.simulated_deployment_name = None
+
+        secret_client = kubernetes.client.CoreV1Api()
+        empty_options = kubernetes.client.V1DeleteOptions()
+        secret_resp = secret_client.delete_namespaced_secret(
+            self.simulated_deployment_name, KUBERNETES_NAMESPACE, empty_options)
+        LOGGER.info('Deleted secret response: %s.', secret_resp)
+        self.simulated_deployment_name = None
 
     def __str__(self):
         return "{} - {}".format(self.name, self.brewery)
