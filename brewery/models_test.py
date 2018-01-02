@@ -349,6 +349,28 @@ class BrewhouseTest(TestCase):
             brewery=brewery, name="Baz", user=user, token=token, simulated=True)
         brewhouse.delete()
 
+    def test_delete_simulation_on_simulation_removal(self):
+        group = Group.objects.create(name="Foo")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group)
+        token = Token.objects.create(user=user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse.objects.create(
+            brewery=brewery, name="Baz", user=user, token=token, simulated=True)
+
+        self.assertTrue(brewhouse.simulated)
+        self.assertIsNotNone(brewhouse.simulated_deployment_name)
+        self.assertIsNotNone(brewhouse.simulated_secret_name)
+
+        brewhouse.simulated = False
+        brewhouse.save()
+
+        self.assertFalse(brewhouse.simulated)
+        self.assertIsNone(brewhouse.simulated_deployment_name)
+        self.assertIsNone(brewhouse.simulated_secret_name)
+
 
 class BeerStyleTest(TestCase):
     """Tests for the BeerStyle model."""

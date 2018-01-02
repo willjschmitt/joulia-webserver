@@ -396,6 +396,8 @@ class Brewhouse(models.Model):
 
         if self.simulated:
             self._create_simulated_controller()
+        else:
+            self._delete_simulated_controller()
 
         super(Brewhouse, self).save(*args, **kwargs)
 
@@ -510,19 +512,19 @@ class Brewhouse(models.Model):
         LOGGER.info('Created deployment response: %s', deployment_resp)
 
     def _delete_simulated_controller(self):
-        deployment_client = kubernetes.client.AppsV1beta1Api()
         empty_options = kubernetes.client.V1DeleteOptions()
+
+        deployment_client = kubernetes.client.AppsV1beta1Api()
         deployment_resp = deployment_client.delete_namespaced_deployment(
             self.simulated_deployment_name, KUBERNETES_NAMESPACE, empty_options)
         LOGGER.info('Deleted deployment response: %s.', deployment_resp)
         self.simulated_deployment_name = None
 
         secret_client = kubernetes.client.CoreV1Api()
-        empty_options = kubernetes.client.V1DeleteOptions()
         secret_resp = secret_client.delete_namespaced_secret(
-            self.simulated_deployment_name, KUBERNETES_NAMESPACE, empty_options)
+            self.simulated_secret_name, KUBERNETES_NAMESPACE, empty_options)
         LOGGER.info('Deleted secret response: %s.', secret_resp)
-        self.simulated_deployment_name = None
+        self.simulated_secret_name = None
 
     def __str__(self):
         return "{} - {}".format(self.name, self.brewery)
