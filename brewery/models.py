@@ -14,6 +14,7 @@ import math
 from rest_framework.authtoken.models import Token
 from uuid import uuid4
 
+from joulia import settings
 from joulia import unit_conversions
 
 
@@ -433,9 +434,10 @@ class Brewhouse(models.Model):
             self.BREWHOUSE_SIMULATION_SECRET_KEY: self.simulated_secret_name
         })
         secret_client = kubernetes.client.CoreV1Api()
-        secret_resp = secret_client.create_namespaced_secret(
-            KUBERNETES_NAMESPACE, secret)
-        LOGGER.info('Created secret response: %s', secret_resp)
+        if settings.PRODUCTION_HOST:
+            secret_resp = secret_client.create_namespaced_secret(
+                KUBERNETES_NAMESPACE, secret)
+            LOGGER.info('Created secret response: %s', secret_resp)
 
     def _create_kubernetes_deployment(self, uuid):
         """Creates a new kubernetes deployment.
@@ -507,23 +509,26 @@ class Brewhouse(models.Model):
         )
 
         deployment_client = kubernetes.client.AppsV1beta1Api()
-        deployment_resp = deployment_client.create_namespaced_deployment(
-            KUBERNETES_NAMESPACE, deployment)
-        LOGGER.info('Created deployment response: %s', deployment_resp)
+        if settings.PRODUCTION_HOST:
+            deployment_resp = deployment_client.create_namespaced_deployment(
+                KUBERNETES_NAMESPACE, deployment)
+            LOGGER.info('Created deployment response: %s', deployment_resp)
 
     def _delete_simulated_controller(self):
         empty_options = kubernetes.client.V1DeleteOptions()
 
         deployment_client = kubernetes.client.AppsV1beta1Api()
-        deployment_resp = deployment_client.delete_namespaced_deployment(
-            self.simulated_deployment_name, KUBERNETES_NAMESPACE, empty_options)
-        LOGGER.info('Deleted deployment response: %s.', deployment_resp)
+        if settings.PRODUCTION_HOST:
+            deployment_resp = deployment_client.delete_namespaced_deployment(
+                self.simulated_deployment_name, KUBERNETES_NAMESPACE, empty_options)
+            LOGGER.info('Deleted deployment response: %s.', deployment_resp)
         self.simulated_deployment_name = None
 
         secret_client = kubernetes.client.CoreV1Api()
-        secret_resp = secret_client.delete_namespaced_secret(
-            self.simulated_secret_name, KUBERNETES_NAMESPACE, empty_options)
-        LOGGER.info('Deleted secret response: %s.', secret_resp)
+        if settings.PRODUCTION_HOST:
+            secret_resp = secret_client.delete_namespaced_secret(
+                self.simulated_secret_name, KUBERNETES_NAMESPACE, empty_options)
+            LOGGER.info('Deleted secret response: %s.', secret_resp)
         self.simulated_secret_name = None
 
     def __str__(self):

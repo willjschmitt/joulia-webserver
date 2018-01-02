@@ -150,6 +150,7 @@ class MockKubernetesCoreV1Api(kubernetes.client.CoreV1Api):
 
 @patch('kubernetes.client.AppsV1beta1Api', MockKubernetesV1beta1Api)
 @patch('kubernetes.client.CoreV1Api', MockKubernetesCoreV1Api)
+@patch('joulia.settings.PRODUCTION_HOST', True)
 class BrewhouseTest(TestCase):
     """Test for the Brewhouse model."""
 
