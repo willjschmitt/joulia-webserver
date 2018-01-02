@@ -19,6 +19,7 @@ spec:
       labels:
         app: joulia-webserver
     spec:
+      serviceAccountName: joulia-webserver
       containers:
       - name: joulia-webserver
         # Image is auto-updated by Travis to the actual current tag by commit.

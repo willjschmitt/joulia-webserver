@@ -5,7 +5,9 @@ import datetime
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.test import TestCase
+import kubernetes
 from rest_framework.authtoken.models import Token
+from unittest.mock import patch
 
 from brewery import models
 
@@ -118,6 +120,36 @@ class HotLiquorTunTest(TestCase):
         self.assertIs(hot_liquor_tun.heating_element, heating_element)
 
 
+class MockKubernetesV1beta1Api(kubernetes.client.AppsV1beta1Api):
+    """Mocks the Kubernetes V1beta1 API to accept deployment creates/destroys.
+    """
+
+    def create_namespaced_deployment(self, namespace, deployment, pretty=False):
+        del namespace, deployment, pretty
+        return 'Mock create deployment response.'
+
+    def delete_namespaced_deployment(self, name, namespace, options,
+                                     pretty=False):
+        del name, namespace, options, pretty
+        return 'Mock delete deployment response.'
+
+
+class MockKubernetesCoreV1Api(kubernetes.client.CoreV1Api):
+    """Mocks the Kubernetes V1 API to accept secrets creates/destroys.
+    """
+
+    def create_namespaced_secret(self, namespace, secret, pretty=False):
+        del namespace, secret, pretty
+        return 'Mock create secret response.'
+
+    def delete_namespaced_secret(self, name, namespace, options,
+                                 pretty=False):
+        del name, namespace, options, pretty
+        return 'Mock delete secret response.'
+
+
+@patch('kubernetes.client.AppsV1beta1Api', MockKubernetesV1beta1Api)
+@patch('kubernetes.client.CoreV1Api', MockKubernetesCoreV1Api)
 class BrewhouseTest(TestCase):
     """Test for the Brewhouse model."""
 
@@ -289,6 +321,33 @@ class BrewhouseTest(TestCase):
         brewhouse.main_pump = main_pump
         brewhouse.save()
         self.assertIs(brewhouse.main_pump, main_pump)
+
+    def test_save_create_simulation(self):
+        group = Group.objects.create(name="Foo")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group)
+        token = Token.objects.create(user=user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse.objects.create(
+            brewery=brewery, name="Baz", user=user, token=token, simulated=True)
+
+        self.assertTrue(brewhouse.simulated)
+        self.assertIsNotNone(brewhouse.simulated_deployment_name)
+        self.assertIsNotNone(brewhouse.simulated_secret_name)
+
+    def test_delete_simulation(self):
+        group = Group.objects.create(name="Foo")
+        user = User.objects.create(username="foo-user")
+        user.groups.add(group)
+        token = Token.objects.create(user=user)
+        brewing_company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(company=brewing_company,
+                                                name="Bar")
+        brewhouse = models.Brewhouse.objects.create(
+            brewery=brewery, name="Baz", user=user, token=token, simulated=True)
+        brewhouse.delete()
 
 
 class BeerStyleTest(TestCase):

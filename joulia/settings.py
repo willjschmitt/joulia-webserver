@@ -1,6 +1,7 @@
 """Django settings for joulia-webserver project.
 """
 
+import kubernetes
 import logging
 import os
 import socket
@@ -260,3 +261,7 @@ if PRODUCTION_HOST:
         'dsn': sentry_dsn,
     }
     LOGGING['loggers']['']['handlers'].append('sentry')
+
+# Kubernetes cluster is only applicable in production cluster.
+if PRODUCTION_HOST:
+    kubernetes.config.load_incluster_config()
