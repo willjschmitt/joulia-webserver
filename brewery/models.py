@@ -464,14 +464,14 @@ class Brewhouse(models.Model):
                 )
             )
         )
-        deployment = kubernetes.client.AppsV1beta1Deployment(
+        deployment = kubernetes.client.ExtensionsV1beta1Deployment(
             api_version='extensions/v1beta1',
             kind='Deployment',
             metadata=kubernetes.client.V1ObjectMeta(
                 name=self.simulated_deployment_name,
                 labels={'app': self.simulated_deployment_name}
             ),
-            spec=kubernetes.client.V1beta2DeploymentSpec(
+            spec=kubernetes.client.ExtensionsV1beta1DeploymentSpec(
                 replicas=1,
                 selector=kubernetes.client.V1LabelSelector(
                     match_labels={'app': self.simulated_deployment_name}
@@ -513,7 +513,7 @@ class Brewhouse(models.Model):
             )
         )
 
-        deployment_client = kubernetes.client.AppsV1beta1Api()
+        deployment_client = kubernetes.client.ExtensionsV1beta1Api()
         if settings.PRODUCTION_HOST:
             deployment_resp = deployment_client.create_namespaced_deployment(
                 namespace=KUBERNETES_NAMESPACE, body=deployment)
