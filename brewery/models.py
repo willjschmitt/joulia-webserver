@@ -406,8 +406,7 @@ class Brewhouse(models.Model):
     def delete(self, using=None, keep_parents=False):
         super(Brewhouse, self).delete(using, keep_parents)
 
-        if self.simulated:
-            self._delete_simulated_controller()
+        self._delete_simulated_controller()
 
     def _create_simulated_controller(self):
         """Creates a kubernetes deployment for a simulated controller."""
@@ -432,12 +431,12 @@ class Brewhouse(models.Model):
             self.BREWHOUSE_SIMULATION_SECRET_BASE, uuid)
 
         secret = kubernetes.client.V1Secret(string_data={
-            self.BREWHOUSE_SIMULATION_SECRET_KEY: self.token.key.encode,
+            self.BREWHOUSE_SIMULATION_SECRET_KEY: self.token.key,
         })
         secret_client = kubernetes.client.CoreV1Api()
         if settings.PRODUCTION_HOST:
             secret_resp = secret_client.create_namespaced_secret(
-                KUBERNETES_NAMESPACE, secret)
+                namespace=KUBERNETES_NAMESPACE, body=secret)
             LOGGER.info('Created secret response: %s', secret_resp)
 
     def _create_kubernetes_deployment(self, uuid):
@@ -512,21 +511,24 @@ class Brewhouse(models.Model):
         deployment_client = kubernetes.client.AppsV1beta1Api()
         if settings.PRODUCTION_HOST:
             deployment_resp = deployment_client.create_namespaced_deployment(
-                KUBERNETES_NAMESPACE, deployment)
+                namespace=KUBERNETES_NAMESPACE, body=deployment)
             LOGGER.info('Created deployment response: %s', deployment_resp)
 
     def _delete_simulated_controller(self):
         empty_options = kubernetes.client.V1DeleteOptions()
 
         deployment_client = kubernetes.client.AppsV1beta1Api()
-        if settings.PRODUCTION_HOST:
+        if (self.simulated_deployment_name is not None
+            and settings.PRODUCTION_HOST):
             deployment_resp = deployment_client.delete_namespaced_deployment(
-                self.simulated_deployment_name, KUBERNETES_NAMESPACE, empty_options)
+                self.simulated_deployment_name, KUBERNETES_NAMESPACE,
+                empty_options)
             LOGGER.info('Deleted deployment response: %s.', deployment_resp)
         self.simulated_deployment_name = None
 
         secret_client = kubernetes.client.CoreV1Api()
-        if settings.PRODUCTION_HOST:
+        if (self.simulated_secret_name is not None
+            and settings.PRODUCTION_HOST):
             secret_resp = secret_client.delete_namespaced_secret(
                 self.simulated_secret_name, KUBERNETES_NAMESPACE, empty_options)
             LOGGER.info('Deleted secret response: %s.', secret_resp)

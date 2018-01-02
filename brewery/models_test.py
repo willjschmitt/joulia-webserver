@@ -8,6 +8,7 @@ from django.test import TestCase
 import kubernetes
 from rest_framework.authtoken.models import Token
 from unittest.mock import patch
+import urllib3
 
 from brewery import models
 
@@ -120,36 +121,23 @@ class HotLiquorTunTest(TestCase):
         self.assertIs(hot_liquor_tun.heating_element, heating_element)
 
 
-class MockKubernetesV1beta1Api(kubernetes.client.AppsV1beta1Api):
-    """Mocks the Kubernetes V1beta1 API to accept deployment creates/destroys.
+class MockKubernetesREST(kubernetes.client.rest.RESTClientObject):
+    """Mocks the Kubernetes underlying REST interface.
+
+    Intercepts the simple REST API calls so we can get good coverage calling all
+    intermediate logic like sanitization.
     """
 
-    def create_namespaced_deployment(self, namespace, deployment, pretty=False):
-        del namespace, deployment, pretty
-        return 'Mock create deployment response.'
-
-    def delete_namespaced_deployment(self, name, namespace, options,
-                                     pretty=False):
-        del name, namespace, options, pretty
-        return 'Mock delete deployment response.'
-
-
-class MockKubernetesCoreV1Api(kubernetes.client.CoreV1Api):
-    """Mocks the Kubernetes V1 API to accept secrets creates/destroys.
-    """
-
-    def create_namespaced_secret(self, namespace, secret, pretty=False):
-        del namespace, secret, pretty
-        return 'Mock create secret response.'
-
-    def delete_namespaced_secret(self, name, namespace, options,
-                                 pretty=False):
-        del name, namespace, options, pretty
-        return 'Mock delete secret response.'
+    def request(self, method, url, query_params=None, headers=None,
+                body=None, post_params=None, _preload_content=True,
+                _request_timeout=None):
+        del query_params, headers, post_params, _preload_content
+        del _request_timeout
+        return urllib3.response.HTTPResponse(
+            '{} request at {}: {}'.format(method, url, body))
 
 
-@patch('kubernetes.client.AppsV1beta1Api', MockKubernetesV1beta1Api)
-@patch('kubernetes.client.CoreV1Api', MockKubernetesCoreV1Api)
+@patch('kubernetes.client.api_client.RESTClientObject', MockKubernetesREST)
 @patch('joulia.settings.PRODUCTION_HOST', True)
 class BrewhouseTest(TestCase):
     """Test for the Brewhouse model."""
