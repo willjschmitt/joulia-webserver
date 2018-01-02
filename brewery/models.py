@@ -452,8 +452,7 @@ class Brewhouse(models.Model):
         Args:
             uuid: The UUID to append to the deployment base for its name.
         """
-        self.simulated_deployment_name = '{}-{}'.format(
-            self.BREWHOUSE_SIMULATION_DEPLOYMENT_BASE, uuid)
+        self.simulated_deployment_name = str(uuid)
 
         secret_env_var = kubernetes.client.V1EnvVar(
             name='JOULIA_WEBSERVER_AUTHTOKEN',
