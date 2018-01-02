@@ -466,7 +466,7 @@ class Brewhouse(models.Model):
         )
         deployment = kubernetes.client.AppsV1beta1Deployment(
             api_version='extensions/v1beta1',
-            kind='deployment',
+            kind='Deployment',
             metadata=kubernetes.client.V1ObjectMeta(
                 name=self.simulated_deployment_name,
                 labels={'app': self.simulated_deployment_name}
