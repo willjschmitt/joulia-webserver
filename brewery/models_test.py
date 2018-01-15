@@ -270,7 +270,7 @@ class BrewhouseTest(TestCase):
         recipe = models.Recipe.objects.create(name="Baz")
         models.RecipeInstance.objects.create(
             recipe=recipe, brewhouse=brewhouse, active=True)
-        self.assertEquals(str(brewhouse), "Bar - Foo")
+        self.assertRegexpMatches(str(brewhouse), "\[Bar - Foo\]\(#\d+\)")
 
     def test_save_no_boil_kettle(self):
         brewhouse = models.Brewhouse()

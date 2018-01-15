@@ -545,7 +545,7 @@ class Brewhouse(models.Model):
         self.simulated_secret_name = None
 
     def __str__(self):
-        return "{} - {}".format(self.name, self.brewery)
+        return "[{} - {}](#{})".format(self.name, self.brewery, self.pk)
 
 
 class BeerStyle(models.Model):
