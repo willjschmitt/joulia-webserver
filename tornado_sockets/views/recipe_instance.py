@@ -93,7 +93,7 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
             for waiter in cls.waiters[brewhouse]:
                 waiter.set_result(dict(recipe_instance=recipe_instance))
         else:
-            LOGGER.warning('Brewhouse not in waiters')
+            LOGGER.warning('Brewhouse %s not in waiters', brewhouse)
 
     def on_connection_close(self):
         self._handle_lost_connection()
@@ -115,8 +115,11 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
                 self.current_user, brewing_company)
 
         if not permission:
-            self.set_status(status.HTTP_403_FORBIDDEN,
-                            'Must be member of brewing company.')
+            message = (
+                'Must be member of brewing company to watch brewhouse {}.'
+                .format(brewhouse))
+            LOGGER.error(message)
+            self.set_status(status.HTTP_403_FORBIDDEN, message)
 
         return permission
 
@@ -154,7 +157,7 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
 
     def _handle_lost_connection(self):
         """Removes current future for brewhouse."""
-        LOGGER.debug('Lost waiter connection')
+        LOGGER.debug('Lost waiter connection for %s.', self.brewhouse)
         self.unregister_waiter()
 
     def get_and_check_permission(self):
