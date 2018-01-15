@@ -6,13 +6,10 @@ from django.conf import settings
 from django.contrib.auth import get_user
 from django.http.request import HttpRequest
 from importlib import import_module
-import logging
 from rest_framework.request import Request
 from rest_framework.settings import api_settings
 from tornado.web import RequestHandler
 from tornado.websocket import WebSocketHandler
-
-LOGGER = logging.getLogger(__name__)
 
 
 class DjangoAuthenticatedRequestHandler(RequestHandler):
@@ -33,8 +30,6 @@ class DjangoAuthenticatedRequestHandler(RequestHandler):
         rest_framework_request = Request(django_request,
                                          authenticators=authenticators)
         user = rest_framework_request.user
-        LOGGER.info(user)
-        LOGGER.info(self.request.headers)
         return user
 
 
