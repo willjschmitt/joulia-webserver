@@ -96,6 +96,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         """Handles the closing of the websocket connection, removing any
         subscriptions.
         """
+        LOGGER.info("Websocket connection %s ended.", self)
         self.waiters.remove(self)
         self.unsubscribe()
 
@@ -114,10 +115,10 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         if not self.check_permission():
             return
 
-        # Subscription to a signal
+        # Subscription to a signal.
         if 'subscribe' in parsed_message:
             self.subscribe(parsed_message)
-        # Submission of a new datapoint
+        # Submission of a new datapoint.
         else:
             self.new_data(parsed_message)
 
@@ -152,11 +153,12 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         Args:
             parsed_message: Data received from websocket.
         """
+        LOGGER.info('New subscription received for %s: %s.', self,
+                    parsed_message)
+
         recipe_instance_pk = parsed_message['recipe_instance']
         sensor_pk = parsed_message['sensor']
         history_time = parsed_message.get('history_time', None)
-
-        LOGGER.debug('Subscribing')
 
         self._add_subscription(recipe_instance_pk, sensor_pk)
 
@@ -210,7 +212,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         Args:
             parsed_message: Data received from websocket.
         """
-        LOGGER.debug('New data received.')
+        LOGGER.debug('New data received for %s: %s.', self, parsed_message)
 
         data = parsed_message
         data["source"] = self.source_id
@@ -228,19 +230,20 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
                 to any subscribers.
         """
         key = (new_data_point.recipe_instance.pk, new_data_point.sensor.pk)
-        LOGGER.debug(str(key))
-        if key in cls.subscriptions:
-            waiter_count = len(cls.subscriptions[key])
-            LOGGER.info("sending message to %d waiters.", waiter_count)
-            for waiter in cls.subscriptions[key]:
-                # Skip sending data points to the subscriber that sent it.
-                if (new_data_point.source is not None
-                        and new_data_point.source == waiter.source_id):
-                    continue
-                serializer = TimeSeriesDataPointSerializer(new_data_point)
-                waiter.write_message(serializer.data)
-        else:
+        if key not in cls.subscriptions:
             LOGGER.debug("No subscribers for %s.", new_data_point.sensor.name)
+            return
+
+        subscriptions = cls.subscriptions[key]
+        LOGGER.info("Sending message to %d waiters.", len(subscriptions))
+        for waiter in subscriptions:
+            # Skip sending data points to the subscriber that sent it.
+            source = new_data_point.source
+            if source is not None and source == waiter.source_id:
+                continue
+
+            serializer = TimeSeriesDataPointSerializer(new_data_point)
+            waiter.write_message(serializer.data)
 
 
 @receiver(post_save, sender=TimeSeriesDataPoint)
@@ -248,5 +251,5 @@ def time_series_watcher(sender, instance, **kwargs):
     """A django receiver watching for any saves on a datapoint to send
     to waiters
     """
-    LOGGER.debug("Got new datapoint %s", instance)
+    LOGGER.debug("Observed newly saved datapoint: %s.", instance)
     TimeSeriesSocketHandler.send_updates(instance)
