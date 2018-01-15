@@ -31,6 +31,7 @@ class TestTimeSeriesSocketHandlerInternals(JouliaTestCase):
         cookie = Mock(value="abcdefg")
         self.request.cookies = {settings.SESSION_COOKIE_NAME: cookie}
         self.request.arguments = {}
+        self.request.headers = {}
         self.handler = timeseries.TimeSeriesSocketHandler(self.app,
                                                           self.request)
 
