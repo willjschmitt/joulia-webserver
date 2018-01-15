@@ -181,9 +181,11 @@ class RecipeInstanceStartHandler(RecipeInstanceHandler):
     waiters = {}
 
     def handle_request(self):
-        LOGGER.info("Got start watch request.")
+        LOGGER.info("Got start watch request for brewhouse %s.", self.brewhouse)
         if self.brewhouse.active:
             recipe_instance = self.brewhouse.active_recipe_instance
+            LOGGER.info("System already active. Immediately returning %s.",
+                        recipe_instance)
             self.future.set_result({"recipe_instance": recipe_instance.pk})
 
 
@@ -199,8 +201,9 @@ class RecipeInstanceEndHandler(RecipeInstanceHandler):
     waiters = {}
 
     def handle_request(self):
-        LOGGER.info("Got end watch request.")
+        LOGGER.info("Got end watch request for brewhouse %s.", self.brewhouse)
         if not self.brewhouse.active:
+            LOGGER.info("System already inactive. Immediately returning.")
             self.future.set_result({"recipe_instance": None})
 
 
@@ -215,7 +218,7 @@ def recipe_instance_watcher(sender, instance, **kwargs):
     If a RecipeInstance is saved and now inactive, the RecipeInstanceEndHandler
     notify classmethod.
     """
-    LOGGER.debug("Got changed recipe instance %s", instance)
+    LOGGER.debug("Observed changed recipe instance: %s.", instance)
     if instance.active:
         RecipeInstanceStartHandler.notify(instance.brewhouse, instance.pk)
     else:
