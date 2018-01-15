@@ -10,7 +10,7 @@ metadata:
   labels:
     app: joulia-webserver
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: joulia-webserver
