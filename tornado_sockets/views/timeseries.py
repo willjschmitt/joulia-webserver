@@ -153,8 +153,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         Args:
             parsed_message: Data received from websocket.
         """
-        LOGGER.info('New subscription received for %s: %s.', self,
-                    parsed_message)
+        LOGGER.info('New subscription received: %s.', parsed_message)
 
         recipe_instance_pk = parsed_message['recipe_instance']
         sensor_pk = parsed_message['sensor']
@@ -212,7 +211,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         Args:
             parsed_message: Data received from websocket.
         """
-        LOGGER.debug('New data received for %s: %s.', self, parsed_message)
+        LOGGER.debug('New data received: %s.', parsed_message)
 
         data = parsed_message
         data["source"] = self.source_id
