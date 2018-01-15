@@ -88,7 +88,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
     def open(self):
         """Handles the opening of a new websocket connection for streaming data.
         """
-        LOGGER.info("New websocket connection incoming %s.", self)
+        LOGGER.info("New websocket connection incoming from %s.",
+                    self.get_current_user())
         self.waiters.add(self)
         self._authenticate()
 
@@ -96,7 +97,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         """Handles the closing of the websocket connection, removing any
         subscriptions.
         """
-        LOGGER.info("Websocket connection %s ended.", self)
+        LOGGER.info("Websocket connection from %s ended.",
+                    self.get_current_user())
         self.waiters.remove(self)
         self.unsubscribe()
 
@@ -129,7 +131,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         recipe_instance = RecipeInstance.objects.get(pk=self.recipe_instance_pk)
 
         if not permitted:
-            LOGGER.error("Forbidden request %d.", recipe_instance)
+            LOGGER.error("Forbidden request from %s for %d.",
+                         self.get_current_user(), recipe_instance)
 
         return permitted
 
@@ -153,7 +156,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         Args:
             parsed_message: Data received from websocket.
         """
-        LOGGER.info('New subscription received: %s.', parsed_message)
+        LOGGER.info('New subscription received from %s: %s.',
+                    self.get_current_user(), parsed_message)
 
         recipe_instance_pk = parsed_message['recipe_instance']
         sensor_pk = parsed_message['sensor']
@@ -211,7 +215,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         Args:
             parsed_message: Data received from websocket.
         """
-        LOGGER.debug('New data received: %s.', parsed_message)
+        LOGGER.debug('New data received from %s: %s.', self.get_current_user(),
+                     parsed_message)
 
         data = parsed_message
         data["source"] = self.source_id

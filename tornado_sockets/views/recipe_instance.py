@@ -116,8 +116,8 @@ class RecipeInstanceHandler(DjangoAuthenticatedRequestHandler):
 
         if not permission:
             message = (
-                'Must be member of brewing company to watch brewhouse {}.'
-                .format(brewhouse))
+                '%s must be member of brewing company to watch brewhouse {}.'
+                .format(self.get_current_user(), brewhouse))
             LOGGER.error(message)
             self.set_status(status.HTTP_403_FORBIDDEN, message)
 
@@ -184,7 +184,8 @@ class RecipeInstanceStartHandler(RecipeInstanceHandler):
     waiters = {}
 
     def handle_request(self):
-        LOGGER.info("Got start watch request for brewhouse %s.", self.brewhouse)
+        LOGGER.info("Got start watch request from %s for brewhouse %s.",
+                    self.get_current_user(), self.brewhouse)
         if self.brewhouse.active:
             recipe_instance = self.brewhouse.active_recipe_instance
             LOGGER.info("System already active. Immediately returning %s.",
@@ -204,7 +205,8 @@ class RecipeInstanceEndHandler(RecipeInstanceHandler):
     waiters = {}
 
     def handle_request(self):
-        LOGGER.info("Got end watch request for brewhouse %s.", self.brewhouse)
+        LOGGER.info("Got end watch request from %s for brewhouse %s.",
+                    self.get_current_user(), self.brewhouse)
         if not self.brewhouse.active:
             LOGGER.info("System already inactive. Immediately returning.")
             self.future.set_result({"recipe_instance": None})
