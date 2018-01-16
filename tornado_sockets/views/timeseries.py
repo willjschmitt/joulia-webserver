@@ -239,12 +239,18 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             return
 
         subscriptions = cls.subscriptions[key]
-        LOGGER.info("Sending message to %d waiters.", len(subscriptions))
+        LOGGER.info("Sending value %s for sensor %s to %d waiters.",
+                    new_data_point.value, new_data_point.sensor,
+                    len(subscriptions))
         for waiter in subscriptions:
             # Skip sending data points to the subscriber that sent it.
             source = new_data_point.source
             if source is not None and source == waiter.source_id:
                 continue
+
+            LOGGER.debug("Writing value %s for sensor %s for %s.",
+                         new_data_point.value, new_data_point.sensor,
+                         waiter.get_current_user())
 
             serializer = TimeSeriesDataPointSerializer(new_data_point)
             waiter.write_message(serializer.data)
