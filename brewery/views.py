@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.http import JsonResponse
 import logging
+from rest_framework import filters
 from rest_framework import generics
 from rest_framework import status
 from joulia.filters import SearchOrIdFilter
@@ -276,7 +277,9 @@ class RecipeInstanceApiMixin(APIView):
     """Common REST API view information for ``RecipeInstance`` model."""
     serializer_class = serializers.RecipeInstanceSerializer
     permission_classes = (IsAuthenticated, permissions.OwnsRecipe)
+    filter_backends = (filters.DjangoFilterBackend, filters.OrderingFilter)
     filter_fields = ('id', 'active', 'brewhouse',)
+    ordering_fields = ('date',)
 
     def get_queryset(self):
         return models.RecipeInstance.objects.filter(
