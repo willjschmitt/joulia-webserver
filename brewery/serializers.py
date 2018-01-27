@@ -178,6 +178,13 @@ class BeerStyleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class YeastIngredientSerializer(serializers.ModelSerializer):
+    """Standard serializer for YeastIngredient."""
+    class Meta:
+        model = models.YeastIngredient
+        fields = '__all__'
+
+
 class MaltIngredientSerializer(serializers.ModelSerializer):
     """Standard serializer for MaltIngredient."""
     class Meta:
@@ -216,7 +223,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'style', 'last_brewed', 'number_of_batches',
                   'company', 'strike_temperature', 'mashout_temperature',
                   'mashout_time', 'boil_time', 'cool_temperature',
-                  'original_gravity', 'ibu', 'srm', 'volume',)
+                  'original_gravity', 'final_gravity', 'abv', 'ibu', 'srm',
+                  'volume', 'yeast',)
 
     @staticmethod
     def get_last_brewed(recipe):

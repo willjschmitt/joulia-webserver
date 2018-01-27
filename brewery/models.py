@@ -560,6 +560,34 @@ class BeerStyle(models.Model):
         return "{}".format(self.name)
 
 
+class Ingredient(models.Model):
+    """An ingredient, which can be used in a recipe.
+
+    Attributes:
+        name: The human-readable name for the ingredient.
+    """
+    name = models.CharField(max_length=256)
+
+    class Meta:
+        abstract = True
+
+
+class YeastIngredient(Ingredient):
+    """An ingredient, which ferments sugars in wort into alcohol.
+
+    Attributes:
+        attenuation: Per-unit average attentuation of yeast.
+        low_temperature: Low end of fermentation temperature in degF.
+        high_temperature: High end of fermentation temperature in degF.
+        abv_tolerance: Per-unit alcohol tolerance.
+    """
+
+    attenuation = models.FloatField(default=0.0)
+    low_temperature = models.FloatField(default=0.0)
+    high_temperature = models.FloatField(default=0.0)
+    abv_tolerance = models.FloatField(default=0.0)
+
+
 class Recipe(models.Model):
     """A recipe designed by the brewing company to be used in recipe instances.
 
@@ -586,6 +614,8 @@ class Recipe(models.Model):
     company = models.ForeignKey(BrewingCompany, null=True)
 
     volume = models.FloatField(default=0.0)
+
+    yeast = models.ForeignKey(YeastIngredient, null=True)
 
     # Temperatures and times.
     strike_temperature = models.FloatField(default=162.0)
@@ -615,6 +645,28 @@ class Recipe(models.Model):
                 - 1.0)
             gravity_gallons += amount_pounds * gravity_offset
         return gravity_gallons / self.volume + 1.0
+
+    @property
+    def final_gravity(self):
+        """Calculates the final gravity of the recipe.
+
+        Uses original gravity and attenuation to calculate
+
+        Units: specific gravity relative to water.
+        """
+        if self.yeast is None:
+            return self.original_gravity
+
+        og = self.original_gravity
+        return og - (og - 1.0) * self.yeast.attenuation
+
+    @property
+    def abv(self):
+        """Calculates the per-unit alcohol by volume of the recipe.
+
+        Units: per-unit.
+        """
+        return (self.original_gravity - self.final_gravity) * 1.3125
 
     @property
     def ibu(self):
@@ -654,18 +706,6 @@ class Recipe(models.Model):
             mcu += unit_conversions.grams_to_pounds(addition.amount) \
                 * addition.ingredient.color / self.volume
         return 1.4922 * mcu**0.6859
-
-
-class Ingredient(models.Model):
-    """An ingredient, which can be used in a recipe.
-
-    Attributes:
-        name: The human-readable name for the ingredient.
-    """
-    name = models.CharField(max_length=256)
-
-    class Meta:
-        abstract = True
 
 
 class MaltIngredient(Ingredient):

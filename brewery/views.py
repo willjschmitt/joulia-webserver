@@ -142,6 +142,27 @@ class BeerStyleListView(generics.ListAPIView):
     serializer_class = serializers.BeerStyleSerializer
 
 
+class YeastIngredientAPIMixin(APIView):
+    """Common REST API view information for ``YeastIngredient`` model."""
+    serializer_class = serializers.YeastIngredientSerializer
+    permission_classes = (IsAuthenticated, permissions.IsAdminToEdit)
+    queryset = models.YeastIngredient.objects.all()
+
+
+class YeastIngredientListView(YeastIngredientAPIMixin,
+                              generics.ListCreateAPIView):
+    """List and Create REST API view for ``YeastIngredient`` model."""
+    filter_backends = (SearchOrIdFilter,)
+    search_fields = ('name',)
+
+
+class YeastIngredientDetailView(YeastIngredientAPIMixin,
+                                generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, Update, and Destroy REST API view for ``YeastIngredient``
+    model."""
+    pass
+
+
 class MaltIngredientAPIMixin(APIView):
     """Common REST API view information for ``MaltIngredient`` model."""
     serializer_class = serializers.MaltIngredientSerializer

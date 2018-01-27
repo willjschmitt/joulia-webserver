@@ -389,6 +389,31 @@ class RecipeTest(TestCase):
             ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
         self.assertAlmostEqual(recipe.original_gravity, 1.079, 3)
 
+    def test_final_gravity(self):
+        yeast = models.YeastIngredient.objects.create(attenuation=0.75)
+        recipe = models.Recipe.objects.create(volume=5.0, yeast=yeast)
+        # Enough to give 1.08 OG.
+        malt = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.1, name="Fake ingredient")
+        models.MaltIngredientAddition.objects.create(
+            ingredient=malt, amount=1814.37, recipe=recipe)
+        self.assertAlmostEqual(recipe.original_gravity, 1.08, 3)
+
+        self.assertAlmostEqual(recipe.final_gravity, 1.02, 3)
+
+    def test_abv(self):
+        yeast = models.YeastIngredient.objects.create(attenuation=0.75)
+        recipe = models.Recipe.objects.create(volume=5.0, yeast=yeast)
+        # Enough to give 1.08 OG.
+        malt = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.1, name="Fake ingredient")
+        models.MaltIngredientAddition.objects.create(
+            ingredient=malt, amount=1814.37, recipe=recipe)
+        self.assertAlmostEqual(recipe.original_gravity, 1.08, 3)
+        self.assertAlmostEqual(recipe.final_gravity, 1.02, 3)
+
+        self.assertAlmostEqual(recipe.abv, 0.07875, 5)
+
     def test_original_gravity_no_volume(self):
         recipe = models.Recipe.objects.create(volume=0.0)
         self.assertEquals(recipe.original_gravity, 0.0)
