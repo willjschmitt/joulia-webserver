@@ -8,3 +8,4 @@ social-auth-app-django==1.2.0
 jinja2==2.9.4
 raven==6.3.0
 kubernetes==4.0.0
+beautifulsoup4==4.6.0
