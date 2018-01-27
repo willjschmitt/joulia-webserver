@@ -7,6 +7,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.utils import timezone
 import kubernetes
@@ -576,16 +577,37 @@ class YeastIngredient(Ingredient):
     """An ingredient, which ferments sugars in wort into alcohol.
 
     Attributes:
-        attenuation: Per-unit average attentuation of yeast.
+        low_attenuation: Per-unit min attentuation of yeast.
+        high_attenuation: Per-unit max attentuation of yeast.
         low_temperature: Low end of fermentation temperature in degF.
         high_temperature: High end of fermentation temperature in degF.
         abv_tolerance: Per-unit alcohol tolerance.
     """
 
-    attenuation = models.FloatField(default=0.0)
+    def __init__(self, *args, **kwargs):
+        # average_attenuation can be provided as an initialization arg, and
+        # low/high_attenuation will be set to that value.
+        if 'average_attenuation' in kwargs:
+            attenuation = kwargs.pop('average_attenuation')
+            kwargs['low_attenuation'] = attenuation
+            kwargs['high_attenuation'] = attenuation
+        super(YeastIngredient, self).__init__(*args, **kwargs)
+
+    low_attenuation = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
+    high_attenuation = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
     low_temperature = models.FloatField(default=0.0)
     high_temperature = models.FloatField(default=0.0)
-    abv_tolerance = models.FloatField(default=0.0)
+    abv_tolerance = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
+
+    @property
+    def average_attenuation(self):
+        return (self.low_attenuation + self.high_attenuation) / 2.0
 
 
 class Recipe(models.Model):
@@ -650,7 +672,7 @@ class Recipe(models.Model):
     def final_gravity(self):
         """Calculates the final gravity of the recipe.
 
-        Uses original gravity and attenuation to calculate
+        Uses original gravity and yeast average attenuation to calculate.
 
         Units: specific gravity relative to water.
         """
@@ -658,7 +680,7 @@ class Recipe(models.Model):
             return self.original_gravity
 
         og = self.original_gravity
-        return og - (og - 1.0) * self.yeast.attenuation
+        return og - (og - 1.0) * self.yeast.average_attenuation
 
     @property
     def abv(self):

@@ -369,6 +369,15 @@ class BeerStyleTest(TestCase):
         self.assertEquals(str(beer_style), "Foo")
 
 
+class YeastIngredientTest(TestCase):
+    """Tests for the YeastIngredient model."""
+
+    def test_average_attentuation(self):
+        yeast = models.YeastIngredient(
+            low_attenuation=0.7, high_attenuation=0.8)
+        self.assertAlmostEqual(yeast.average_attenuation, 0.75)
+
+
 class RecipeTest(TestCase):
     """Tests for the Recipe model."""
 
@@ -390,7 +399,7 @@ class RecipeTest(TestCase):
         self.assertAlmostEqual(recipe.original_gravity, 1.079, 3)
 
     def test_final_gravity(self):
-        yeast = models.YeastIngredient.objects.create(attenuation=0.75)
+        yeast = models.YeastIngredient.objects.create(average_attenuation=0.75)
         recipe = models.Recipe.objects.create(volume=5.0, yeast=yeast)
         # Enough to give 1.08 OG.
         malt = models.MaltIngredient.objects.create(
@@ -402,7 +411,7 @@ class RecipeTest(TestCase):
         self.assertAlmostEqual(recipe.final_gravity, 1.02, 3)
 
     def test_abv(self):
-        yeast = models.YeastIngredient.objects.create(attenuation=0.75)
+        yeast = models.YeastIngredient.objects.create(average_attenuation=0.75)
         recipe = models.Recipe.objects.create(volume=5.0, yeast=yeast)
         # Enough to give 1.08 OG.
         malt = models.MaltIngredient.objects.create(
