@@ -581,16 +581,28 @@ class YeastIngredient(Ingredient):
         high_attenuation: Per-unit max attentuation of yeast.
         low_temperature: Low end of fermentation temperature in degF.
         high_temperature: High end of fermentation temperature in degF.
-        abv_tolerance: Per-unit alcohol tolerance.
+        low_abv_tolerance: Low end of per-unit alcohol tolerance.
+        high_abv_tolerance: Low end of per-unit alcohol tolerance.
     """
 
     def __init__(self, *args, **kwargs):
+        LOGGER.info(kwargs)
         # average_attenuation can be provided as an initialization arg, and
         # low/high_attenuation will be set to that value.
         if 'average_attenuation' in kwargs:
             attenuation = kwargs.pop('average_attenuation')
             kwargs['low_attenuation'] = attenuation
             kwargs['high_attenuation'] = attenuation
+        LOGGER.info(kwargs)
+        # average_abv_tolerance can be provided as an initialization arg, and
+        # low/high_abv_tolerance will be set to that value.
+        if 'average_abv_tolerance' in kwargs:
+            average_abv_tolerance = kwargs.pop('average_abv_tolerance')
+            kwargs['low_abv_tolerance'] = average_abv_tolerance
+            kwargs['high_abv_tolerance'] = average_abv_tolerance
+
+        LOGGER.info(kwargs)
+
         super(YeastIngredient, self).__init__(*args, **kwargs)
 
     low_attenuation = models.FloatField(
@@ -601,13 +613,20 @@ class YeastIngredient(Ingredient):
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
     low_temperature = models.FloatField(default=0.0)
     high_temperature = models.FloatField(default=0.0)
-    abv_tolerance = models.FloatField(
+    low_abv_tolerance = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
+    high_abv_tolerance = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
 
     @property
     def average_attenuation(self):
         return (self.low_attenuation + self.high_attenuation) / 2.0
+
+    @property
+    def average_abv_tolerance(self):
+        return (self.low_abv_tolerance + self.high_abv_tolerance) / 2.0
 
 
 class Recipe(models.Model):

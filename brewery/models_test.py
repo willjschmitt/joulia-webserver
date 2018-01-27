@@ -372,10 +372,27 @@ class BeerStyleTest(TestCase):
 class YeastIngredientTest(TestCase):
     """Tests for the YeastIngredient model."""
 
+    def test_initialize_average_attenuation(self):
+        yeast = models.YeastIngredient.objects.create(
+            average_attenuation=0.5)
+        self.assertAlmostEqual(yeast.low_attenuation, 0.5)
+        self.assertAlmostEqual(yeast.high_attenuation, 0.5)
+
     def test_average_attentuation(self):
         yeast = models.YeastIngredient(
             low_attenuation=0.7, high_attenuation=0.8)
         self.assertAlmostEqual(yeast.average_attenuation, 0.75)
+
+    def test_initialize_average_abv_tolerance(self):
+        yeast = models.YeastIngredient.objects.create(
+            average_abv_tolerance=0.10)
+        self.assertAlmostEqual(yeast.low_abv_tolerance, 0.10)
+        self.assertAlmostEqual(yeast.high_abv_tolerance, 0.10)
+
+    def test_average_abv_tolerance(self):
+        yeast = models.YeastIngredient(
+            low_abv_tolerance=0.05, high_abv_tolerance=0.10)
+        self.assertAlmostEqual(yeast.average_abv_tolerance, 0.075)
 
 
 class RecipeTest(TestCase):
