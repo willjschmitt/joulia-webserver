@@ -8,7 +8,7 @@ from brewery.migrations.utils.hop_migrations import add_hop_ingredients
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('brewery', '0028_auto_20180101_1937'),
+        ('brewery', '0035_copy_attenuations'),
     ]
 
     operations = [
