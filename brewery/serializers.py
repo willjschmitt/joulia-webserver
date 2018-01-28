@@ -182,10 +182,7 @@ class YeastIngredientSerializer(serializers.ModelSerializer):
     """Standard serializer for YeastIngredient."""
     class Meta:
         model = models.YeastIngredient
-        fields = ('low_attenuation', 'high_attenuation', 'average_attenuation',
-                  'low_temperature', 'high_temperature', 'low_abv_tolerance',
-                  'low_abv_tolerance', 'high_abv_tolerance',
-                  'average_abv_tolerance')
+        fields = '__all__'
 
 
 class MaltIngredientSerializer(serializers.ModelSerializer):
