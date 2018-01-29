@@ -15,7 +15,7 @@ def add_styles(apps, _):
     styles = get_bjcp_guidelines(BeerStyle)
     for style in styles:
         if BeerStyle.objects.filter(name=style.name).exists():
-            style.pk = BeerStyle.objects.find(name=style.name).pk
+            style.pk = BeerStyle.objects.get(name=style.name).pk
         style.save()
 
 
@@ -47,7 +47,9 @@ def get_bjcp_subcategory(subcategory_elem, BeerStyle):
     low_ibu, high_ibu = get_low_high(stats.find('ibu'), int)
     low_og, high_og = get_low_high(stats.find('og'), float)
     low_fg, high_fg = get_low_high(stats.find('fg'), float)
-    low_abv, high_abv = get_low_high(stats.find('abv'), float)
+    low_abv_pct, high_abv_pct = get_low_high(stats.find('abv'), float)
+    low_abv = low_abv_pct / 100.0
+    high_abv = high_abv_pct / 100.0
     low_srm, high_srm = get_low_high(stats.find('srm'), float)
     return BeerStyle(
         name=name, low_ibu=low_ibu, high_ibu=high_ibu,
