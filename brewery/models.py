@@ -554,8 +554,29 @@ class BeerStyle(models.Model):
 
     Attributes:
         name: Human readable name for the recipe.
+        low_ibu: Low end IBU value for bitterness.
+        high_ibu: High end IBU value for bitterness.
+        low_original_gravity: Low end original gravity relative to water.
+        high_original_gravity: High end original gravity relative to water.
+        low_final_gravity: Low end final gravity relative to water.
+        high_final_gravity: Low end final gravity relative to water.
+        low_abv: Low end per-unit alcohol by volume.
+        high_abv: High end per-unit alcohol by volume.
+        low_srm: Low end SRM color in degrees Plato.
+        high_srm: High end per-unit alcohol by volume.
     """
     name = models.CharField(max_length=128, unique=True)
+
+    low_ibu = models.IntegerField(default=0)
+    high_ibu = models.IntegerField(default=0)
+    low_original_gravity = models.FloatField(default=0.0)
+    high_original_gravity = models.FloatField(default=0.0)
+    low_final_gravity = models.FloatField(default=0.0)
+    high_final_gravity = models.FloatField(default=0.0)
+    low_abv = models.FloatField(default=0.0)
+    high_abv = models.FloatField(default=0.0)
+    low_srm = models.FloatField(default=0.0)
+    high_srm = models.FloatField(default=0.0)
 
     def __str__(self):
         return "{}".format(self.name)
