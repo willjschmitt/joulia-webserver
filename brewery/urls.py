@@ -25,7 +25,9 @@ urlpatterns = [
     url(r"api/brewhouse/launch/", views.BrewhouseLaunchView.as_view()),
     url(r"api/brewhouse/end/", views.BrewhouseEndView.as_view()),
 
-    url(r"api/beerStyle/", views.BeerStyleListView.as_view()),
+    url(r"api/beerStyle/$", views.BeerStyleListView.as_view()),
+    url(r"api/beerStyle/(?P<pk>[0-9]+)/$", views.BeerStyleDetailView.as_view()),
+
     url(r"api/recipe/$", views.RecipeListView.as_view()),
     url(r"api/recipe/(?P<pk>[0-9]+)/$", views.RecipeDetailView.as_view()),
     url(r"api/yeast_ingredient/$", views.YeastIngredientListView.as_view()),

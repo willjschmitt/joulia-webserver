@@ -136,10 +136,22 @@ class BrewhouseDetailView(BrewhouseApiMixin,
     pass
 
 
-class BeerStyleListView(generics.ListAPIView):
-    """List and Create REST API view for ``BeerStyle`` model."""
+class BeerStyleApiMixin(APIView):
+    """Common REST API view information for ``BeerStyle`` model."""
     queryset = models.BeerStyle.objects.all()
     serializer_class = serializers.BeerStyleSerializer
+    permission_classes = (IsAuthenticated, permissions.IsAdminToEdit)
+
+
+class BeerStyleListView(BeerStyleApiMixin, generics.ListAPIView):
+    """List REST API view for ``BeerStyle`` model."""
+    filter_backends = (SearchOrIdFilter,)
+    search_fields = ('name',)
+
+
+class BeerStyleDetailView(BeerStyleApiMixin, generics.RetrieveAPIView):
+    """Retrieve REST API view for ``BeerStyle``model."""
+    pass
 
 
 class YeastIngredientAPIMixin(APIView):
