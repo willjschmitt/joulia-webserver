@@ -607,22 +607,19 @@ class YeastIngredient(Ingredient):
     """
 
     def __init__(self, *args, **kwargs):
-        LOGGER.info(kwargs)
         # average_attenuation can be provided as an initialization arg, and
         # low/high_attenuation will be set to that value.
         if 'average_attenuation' in kwargs:
             attenuation = kwargs.pop('average_attenuation')
             kwargs['low_attenuation'] = attenuation
             kwargs['high_attenuation'] = attenuation
-        LOGGER.info(kwargs)
+
         # average_abv_tolerance can be provided as an initialization arg, and
         # low/high_abv_tolerance will be set to that value.
         if 'average_abv_tolerance' in kwargs:
             average_abv_tolerance = kwargs.pop('average_abv_tolerance')
             kwargs['low_abv_tolerance'] = average_abv_tolerance
             kwargs['high_abv_tolerance'] = average_abv_tolerance
-
-        LOGGER.info(kwargs)
 
         super(YeastIngredient, self).__init__(*args, **kwargs)
 
