@@ -697,6 +697,8 @@ class Recipe(models.Model):
 
         gravity_gallons = 0.0
         for mash_ingredient_addition in self.maltingredientaddition_set.all():
+            if mash_ingredient_addition.ingredient is None:
+                continue
             amount_pounds = unit_conversions.grams_to_pounds(
                 mash_ingredient_addition.amount)
             gravity_offset = (
@@ -740,6 +742,9 @@ class Recipe(models.Model):
 
         ibu = 0.0
         for addition in self.bitteringingredientaddition_set.all():
+            if addition.ingredient is None:
+                continue
+
             if addition.step_added != BREWING_STEP_CHOICES__BOIL:
                 continue
             amount_ounces = unit_conversions.grams_to_ounces(addition.amount)
@@ -762,6 +767,9 @@ class Recipe(models.Model):
 
         mcu = 0.0
         for addition in self.maltingredientaddition_set.all():
+            if addition.ingredient is None:
+                continue
+
             mcu += unit_conversions.grams_to_pounds(addition.amount) \
                 * addition.ingredient.color / self.volume
         return 1.4922 * mcu**0.6859
