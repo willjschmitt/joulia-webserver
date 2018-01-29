@@ -35,7 +35,7 @@ class BreweryTestBase(TestCase):
         self.brewhouse = models.Brewhouse.objects.create(
             name="Brewhouse 1 (1/6 BBL)", brewery=self.brewery)
 
-        style = models.BeerStyle.objects.create(name="American IPA")
+        style = models.BeerStyle.objects.create(name="Fake Style")
         self.recipe = models.Recipe.objects.create(
             name="Schmittfaced", style=style, company=self.brewing_company)
 
