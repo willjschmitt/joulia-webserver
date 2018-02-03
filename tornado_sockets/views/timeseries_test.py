@@ -1,6 +1,5 @@
 """Tests for the tornado_sockets.views.timeseries module.
 """
-
 from django.conf import settings
 from django.db.models import DateTimeField
 from django.db.models.fields.related import RelatedField
@@ -9,7 +8,6 @@ from datetime import timedelta
 from tornado import gen
 from tornado.escape import json_decode
 from tornado.escape import json_encode
-from tornado.ioloop import TimeoutError
 from tornado.testing import gen_test
 from tornado.testing import AsyncHTTPTestCase
 from tornado.websocket import websocket_connect
@@ -85,7 +83,19 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         model_instance with appropriate serialization.
         """
         parsed_response = json_decode(response)
-        for key, value in parsed_response.items():
+        if isinstance(parsed_response, dict):
+            self.compare_model_instance(parsed_response, model_instance)
+        elif isinstance(parsed_response, list):
+            self.assertTrue(isinstance(model_instance, list))
+            self.assertEquals(len(parsed_response), len(model_instance))
+            for i in range(len(parsed_response)):
+                self.compare_model_instance(parsed_response[i], model_instance[i])
+        else:
+            self.assertFalse(True, "response must be list or dict; got: {}"
+                             .format(type(parsed_response)))
+
+    def compare_model_instance(self, obj, model_instance):
+        for key, value in obj.items():
             want = getattr(model_instance, key)
             field = model_instance._meta.get_field(key)
             if isinstance(field, RelatedField):
@@ -129,13 +139,8 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         websocket.write_message(json_encode(message))
 
         response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, point1)
-
-        response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, point2)
-
-        response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, point3)
+        self.compare_response_to_model_instance(
+            response, [point1, point2, point3])
 
     @gen_test
     def test_subscribe_with_historical_data_filters_based_on_time(self):
@@ -160,10 +165,7 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         websocket.write_message(json_encode(message))
 
         response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, point1)
-
-        response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, point2)
+        self.compare_response_to_model_instance(response, [point1, point2])
 
     @gen_test
     def test_updated_data_received_by_subscriber(self):

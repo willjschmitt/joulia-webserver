@@ -3,6 +3,7 @@ of Django, but use the Django model framework for a database ORM.
 """
 
 import datetime
+import json
 import logging
 
 import tornado.escape
@@ -205,9 +206,9 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             filter_start_time = now + timedelta
             data_points = data_points.filter(time__gt=filter_start_time)
         data_points = data_points.order_by("time")
-        for data_point in data_points:
-            serializer = TimeSeriesDataPointSerializer(data_point)
-            self.write_message(serializer.data)
+        if data_points.exists():
+            serializer = TimeSeriesDataPointSerializer(data_points, many=True)
+            self.write_message(json.dumps(serializer.data))
 
     def new_data(self, parsed_message):
         """Handles a new data point request.
