@@ -148,9 +148,11 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
     def test_subscribe_with_historical_data_in_chunks(self):
         now = timezone.now()
         points = []
-        for _ in range(1001):
+        for i in range(1001):
+            now = timezone.now()
             new_point = models.TimeSeriesDataPoint.objects.create(
-                sensor=self.sensor, recipe_instance=self.recipe_instance)
+                sensor=self.sensor, recipe_instance=self.recipe_instance,
+                time=now+timedelta(milliseconds=i))
             points.append(new_point)
 
         websocket = yield self.generate_websocket()

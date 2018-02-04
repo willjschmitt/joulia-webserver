@@ -3,10 +3,12 @@ of Django, but use the Django model framework for a database ORM.
 """
 
 import datetime
+import functools
 import json
 import logging
 
 import tornado.escape
+from tornado.ioloop import IOLoop
 import tornado.web
 import tornado.websocket
 from django.db.models.signals import post_save
@@ -198,8 +200,9 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         total_points = len(data_points)
         while lower_bound < total_points:
             upper_bound = min(lower_bound + chunk_size, total_points)
-            cls._write_data_response(websocket,
-                                     data_points[lower_bound:upper_bound])
+            chunk = data_points[lower_bound:upper_bound]
+            IOLoop.current().add_callback(
+                functools.partial(cls._write_data_response, websocket, chunk))
             lower_bound += chunk_size
 
     @staticmethod
