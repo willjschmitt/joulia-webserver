@@ -183,6 +183,25 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             self.subscriptions[key] = set()
         self.subscriptions[key].add(self)
 
+    @classmethod
+    def _write_data_response_chunked(cls, websocket, data_points,
+                                     chunk_size=1000):
+        """Writes serialized datas in chunks asynchronously.
+
+        Args:
+            websocket: The websocket to write messages on.
+            data_points: The data to write.
+            chunk_size: The number of data points to write as a maximum.
+        """
+        assert chunk_size > 0
+        lower_bound = 0
+        total_points = len(data_points)
+        while lower_bound < total_points:
+            upper_bound = min(lower_bound + chunk_size, total_points)
+            cls._write_data_response(websocket,
+                                     data_points[lower_bound:upper_bound])
+            lower_bound += chunk_size
+
     @staticmethod
     def _write_data_response(websocket, data_points):
         """Generates a serialized data message with headers for deserialization.
@@ -232,7 +251,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             data_points = data_points.filter(time__gt=filter_start_time)
         data_points = data_points.order_by("time")
         if data_points.exists():
-            self._write_data_response(self, data_points)
+            self._write_data_response_chunked(self, data_points)
 
     def new_data(self, parsed_message):
         """Handles a new data point request.
@@ -277,7 +296,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
                          new_data_point.value, new_data_point.sensor,
                          waiter.get_current_user())
 
-            cls._write_data_response(waiter, [new_data_point])
+            cls._write_data_response_chunked(waiter, [new_data_point])
 
 
 @receiver(post_save, sender=TimeSeriesDataPoint)
