@@ -184,7 +184,11 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         self.subscriptions[key].add(self)
 
     @staticmethod
-    def _response_for_data(data_points):
+    def _write_data_response(websocket, data_points):
+        """Generates a serialized data message with headers for deserialization.
+
+        Writes output to websocket.
+        """
         assert data_points
         model_info = model_meta.get_field_info(TimeSeriesDataPoint)
         field_names = TimeSeriesDataPointSerializer(data_points[0])\
@@ -193,6 +197,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             'headers': list(field_names),
             'data': [],
         }
+        LOGGER.debug("Writing %d datapoints out.", len(data_points))
         for data_point in data_points:
             serializer = TimeSeriesDataPointSerializer(data_point)
             data = serializer.data
@@ -200,7 +205,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             for field_name in field_names:
                 data_entry.append(data[field_name])
             response['data'].append(data_entry)
-        return json.dumps(response)
+        websocket.write_message(json.dumps(response))
 
     def _write_historical_data(self, sensor_pk, recipe_instance_pk,
                                timedelta=None):
@@ -227,7 +232,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             data_points = data_points.filter(time__gt=filter_start_time)
         data_points = data_points.order_by("time")
         if data_points.exists():
-            self.write_message(self._response_for_data(data_points))
+            self._write_data_response(self, data_points)
 
     def new_data(self, parsed_message):
         """Handles a new data point request.
@@ -272,7 +277,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
                          new_data_point.value, new_data_point.sensor,
                          waiter.get_current_user())
 
-            waiter.write_message(cls._response_for_data([new_data_point]))
+            cls._write_data_response(waiter, [new_data_point])
 
 
 @receiver(post_save, sender=TimeSeriesDataPoint)
