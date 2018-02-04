@@ -144,7 +144,7 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         self.compare_response_to_model_instance(
             response, [point1, point2, point3])
 
-    @gen_test
+    @gen_test(timeout=30)
     def test_subscribe_with_historical_data_in_chunks(self):
         now = timezone.now()
         points = []
@@ -167,7 +167,7 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         response2 = yield websocket.read_message()
         self.compare_response_to_model_instance(response2, points[1000:])
 
-    @gen_test(timeout=10)
+    @gen_test
     def test_subscribe_with_historical_data_filters_based_on_time(self):
         now = timezone.now()
         # Should not see this first point in the response.
