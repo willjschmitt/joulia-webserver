@@ -167,7 +167,7 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         response2 = yield websocket.read_message()
         self.compare_response_to_model_instance(response2, points[1000:])
 
-    @gen_test
+    @gen_test(timeout=10)
     def test_subscribe_with_historical_data_filters_based_on_time(self):
         now = timezone.now()
         # Should not see this first point in the response.
