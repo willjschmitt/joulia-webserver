@@ -78,21 +78,24 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         websocket = yield websocket_connect(url, **kwargs)
         return websocket
 
+    def deserialize(self, headers, data_list):
+        result = {}
+        self.assertEquals(len(headers), len(data_list))
+        for i in range(len(headers)):
+            result[headers[i]] = data_list[i]
+        return result
+
     def compare_response_to_model_instance(self, response, model_instance):
         """Compares a received websocket response json string to a
         model_instance with appropriate serialization.
         """
         parsed_response = json_decode(response)
-        if isinstance(parsed_response, dict):
-            self.compare_model_instance(parsed_response, model_instance)
-        elif isinstance(parsed_response, list):
-            self.assertTrue(isinstance(model_instance, list))
-            self.assertEquals(len(parsed_response), len(model_instance))
-            for i in range(len(parsed_response)):
-                self.compare_model_instance(parsed_response[i], model_instance[i])
-        else:
-            self.assertFalse(True, "response must be list or dict; got: {}"
-                             .format(type(parsed_response)))
+        headers = parsed_response['headers']
+        data = parsed_response['data']
+        self.assertEquals(len(data), len(model_instance))
+        for i in range(len(data)):
+            datum = self.deserialize(headers, data[i])
+            self.compare_model_instance(datum, model_instance[i])
 
     def compare_model_instance(self, obj, model_instance):
         for key, value in obj.items():
@@ -189,7 +192,7 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
             sensor=self.sensor, recipe_instance=self.recipe_instance, time=now)
 
         response = yield websocket.read_message()
-        self.compare_response_to_model_instance(response, new_point)
+        self.compare_response_to_model_instance(response, [new_point])
 
     @gen_test(timeout=1.0)
     def test_updated_data_not_sent_to_subscriber_who_sent_it(self):

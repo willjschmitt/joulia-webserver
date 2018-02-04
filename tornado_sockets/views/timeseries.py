@@ -13,6 +13,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from rest_framework.authtoken.models import Token
+from rest_framework.utils import model_meta
 
 from brewery.models import AssetSensor
 from brewery.models import RecipeInstance
@@ -182,6 +183,25 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             self.subscriptions[key] = set()
         self.subscriptions[key].add(self)
 
+    @staticmethod
+    def _response_for_data(data_points):
+        assert data_points
+        model_info = model_meta.get_field_info(TimeSeriesDataPoint)
+        field_names = TimeSeriesDataPointSerializer(data_points[0])\
+            .get_field_names({}, model_info)
+        response = {
+            'headers': list(field_names),
+            'data': [],
+        }
+        for data_point in data_points:
+            serializer = TimeSeriesDataPointSerializer(data_point)
+            data = serializer.data
+            data_entry = []
+            for field_name in field_names:
+                data_entry.append(data[field_name])
+            response['data'].append(data_entry)
+        return json.dumps(response)
+
     def _write_historical_data(self, sensor_pk, recipe_instance_pk,
                                timedelta=None):
         """Sends all the data that already exists, limited to now + timedelta.
@@ -207,8 +227,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
             data_points = data_points.filter(time__gt=filter_start_time)
         data_points = data_points.order_by("time")
         if data_points.exists():
-            serializer = TimeSeriesDataPointSerializer(data_points, many=True)
-            self.write_message(json.dumps(serializer.data))
+            self.write_message(self._response_for_data(data_points))
 
     def new_data(self, parsed_message):
         """Handles a new data point request.
@@ -253,8 +272,7 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
                          new_data_point.value, new_data_point.sensor,
                          waiter.get_current_user())
 
-            serializer = TimeSeriesDataPointSerializer(new_data_point)
-            waiter.write_message(serializer.data)
+            waiter.write_message(cls._response_for_data([new_data_point]))
 
 
 @receiver(post_save, sender=TimeSeriesDataPoint)
