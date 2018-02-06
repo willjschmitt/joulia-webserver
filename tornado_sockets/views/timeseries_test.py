@@ -144,6 +144,30 @@ class TestTimeSeriesSocketHandler(AsyncHTTPTestCase):
         self.compare_response_to_model_instance(
             response, [point1, point2, point3])
 
+    @gen_test
+    def test_subscribe_with_historical_data_before_time(self):
+        now = timezone.now()
+        models.TimeSeriesDataPoint.objects.create(
+            sensor=self.sensor, recipe_instance=self.recipe_instance,
+            time=now - timedelta(seconds=20))
+        latest_point = models.TimeSeriesDataPoint.objects.create(
+            sensor=self.sensor, recipe_instance=self.recipe_instance,
+            time=now - timedelta(seconds=19))
+
+        websocket = yield self.generate_websocket()
+
+        message = {
+            "recipe_instance": self.recipe_instance.pk,
+            "sensor": self.sensor.pk,
+            "subscribe": True,
+            "history_time": -10,
+        }
+        websocket.write_message(json_encode(message))
+
+        response = yield websocket.read_message()
+        self.compare_response_to_model_instance(
+            response, [latest_point])
+
     @gen_test(timeout=30)
     def test_subscribe_with_historical_data_in_chunks(self):
         now = timezone.now()

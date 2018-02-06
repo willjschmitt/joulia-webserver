@@ -992,6 +992,9 @@ class TimeSeriesDataPoint(models.Model):
 
     source = models.TextField(max_length=4, null=True)
 
+    class Meta:
+        get_latest_by = 'time'
+
     def __str__(self):
         return "{} - {} @ {}".format(
             self.sensor.name, self.value, self.time)

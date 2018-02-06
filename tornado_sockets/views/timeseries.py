@@ -233,6 +233,9 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
                                timedelta=None):
         """Sends all the data that already exists, limited to now + timedelta.
 
+        If data exists, but is older than the timedelta, returns the last point
+        observed.
+
         Args:
             sensor_pk: The primary key for the sensor to send data.
             recipe_instance_pk: The primary key for the recipe instance to send
@@ -243,11 +246,8 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
                 no time filter will be applied and all historical data will be
                 written.
         """
-        sensor = AssetSensor.objects.get(pk=sensor_pk)
-        recipe_instance = RecipeInstance.objects.get(pk=recipe_instance_pk)
-
         data_points = TimeSeriesDataPoint.objects.filter(
-            sensor=sensor, recipe_instance=recipe_instance)
+            sensor=sensor_pk, recipe_instance=recipe_instance_pk)
         if timedelta is not None:
             now = timezone.now()
             filter_start_time = now + timedelta
@@ -255,6 +255,14 @@ class TimeSeriesSocketHandler(DjangoAuthenticatedWebSocketHandler):
         data_points = data_points.order_by("time")
         if data_points.exists():
             self._write_data_response_chunked(self, data_points)
+        else:
+            try:
+                latest_point = TimeSeriesDataPoint.objects.filter(
+                    sensor=sensor_pk, recipe_instance=recipe_instance_pk)\
+                    .latest()
+                self._write_data_response_chunked(self, [latest_point])
+            except TimeSeriesDataPoint.DoesNotExist:
+                pass
 
     def new_data(self, parsed_message):
         """Handles a new data point request.
