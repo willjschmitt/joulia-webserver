@@ -655,6 +655,8 @@ class Recipe(models.Model):
         style: Style for the recipe to conform to.
         company: Brewing Company that owns the recipe.
         volume: Amount of beer to be brewed. Units: gallons.
+        brewhouse_efficiency: The per-unit efficiency of the brewhouse to
+            convert sugars from the grain.
         strike_temperature: Temperature to raise Hot Liquor Tun to before strike
             and pumping the Hot Liquor into the Mash Tun. Units: degrees
             Fahrenheit.
@@ -673,6 +675,8 @@ class Recipe(models.Model):
     company = models.ForeignKey(BrewingCompany, null=True)
 
     volume = models.FloatField(default=0.0)
+
+    brewhouse_efficiency = models.FloatField(default=1.0)
 
     yeast = models.ForeignKey(YeastIngredient, null=True)
 
@@ -705,6 +709,7 @@ class Recipe(models.Model):
                 mash_ingredient_addition.ingredient.potential_sg_contribution
                 - 1.0)
             gravity_gallons += amount_pounds * gravity_offset
+        gravity_gallons *= self.brewhouse_efficiency
         return gravity_gallons / self.volume + 1.0
 
     @property

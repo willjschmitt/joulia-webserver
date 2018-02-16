@@ -37,9 +37,14 @@ class BreweryTest(TestCase):
     """Tests for the Brewery model"""
 
     def test_str(self):
-        brewery = models.Brewery.objects.create(name="Foo")
+        company = models.BrewingCompany.objects.create()
+        brewery = models.Brewery.objects.create(name="Foo", company=company)
 
         self.assertEquals(str(brewery), "Foo")
+
+    def test_create_without_brewery(self):
+        with self.assertRaises(models.NonNullableFieldError):
+            models.Brewery.objects.create(name="Foo")
 
 
 class ResistanceTemperatureDeviceMeasurementTest(TestCase):
@@ -265,7 +270,9 @@ class BrewhouseTest(TestCase):
             brewhouse.save()
 
     def test_str(self):
-        brewery = models.Brewery.objects.create(name="Foo")
+        group = Group.objects.create(name="Foo")
+        company = models.BrewingCompany.objects.create(group=group)
+        brewery = models.Brewery.objects.create(name="Foo", company=company)
         brewhouse = models.Brewhouse.objects.create(name="Bar", brewery=brewery)
         recipe = models.Recipe.objects.create(name="Baz")
         models.RecipeInstance.objects.create(
@@ -414,6 +421,19 @@ class RecipeTest(TestCase):
         models.MaltIngredientAddition.objects.create(
             ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
         self.assertAlmostEqual(recipe.original_gravity, 1.079, 3)
+
+    def test_original_gravity_efficiency(self):
+        recipe = models.Recipe.objects.create(
+            volume=5.0, brewhouse_efficiency=0.72)
+        us_2row = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.036, name="US 2Row")
+        crystal_malt = models.MaltIngredient.objects.create(
+            potential_sg_contribution=1.035, name="Crystal Malt")
+        models.MaltIngredientAddition.objects.create(
+            ingredient=us_2row, amount=4535.92, recipe=recipe)  # 10 pounds.
+        models.MaltIngredientAddition.objects.create(
+            ingredient=crystal_malt, amount=453.592, recipe=recipe)  # 1 pound.
+        self.assertAlmostEqual(recipe.original_gravity, 1.057, 3)
 
     def test_final_gravity(self):
         yeast = models.YeastIngredient.objects.create(average_attenuation=0.75)
