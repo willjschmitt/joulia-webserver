@@ -37,14 +37,9 @@ class BreweryTest(TestCase):
     """Tests for the Brewery model"""
 
     def test_str(self):
-        company = models.BrewingCompany.objects.create()
-        brewery = models.Brewery.objects.create(name="Foo", company=company)
+        brewery = models.Brewery.objects.create(name="Foo")
 
         self.assertEquals(str(brewery), "Foo")
-
-    def test_create_without_brewery(self):
-        with self.assertRaises(models.NonNullableFieldError):
-            models.Brewery.objects.create(name="Foo")
 
 
 class ResistanceTemperatureDeviceMeasurementTest(TestCase):
@@ -270,9 +265,7 @@ class BrewhouseTest(TestCase):
             brewhouse.save()
 
     def test_str(self):
-        group = Group.objects.create(name="Foo")
-        company = models.BrewingCompany.objects.create(group=group)
-        brewery = models.Brewery.objects.create(name="Foo", company=company)
+        brewery = models.Brewery.objects.create(name="Foo")
         brewhouse = models.Brewhouse.objects.create(name="Bar", brewery=brewery)
         recipe = models.Recipe.objects.create(name="Baz")
         models.RecipeInstance.objects.create(
