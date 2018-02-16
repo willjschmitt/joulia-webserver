@@ -224,7 +224,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                   'company', 'strike_temperature', 'mashout_temperature',
                   'mashout_time', 'boil_time', 'cool_temperature',
                   'original_gravity', 'final_gravity', 'abv', 'ibu', 'srm',
-                  'volume', 'yeast',)
+                  'volume', 'yeast', 'brewhouse_efficiency',)
 
     @staticmethod
     def get_last_brewed(recipe):
