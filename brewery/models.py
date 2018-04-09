@@ -655,6 +655,11 @@ class Recipe(models.Model):
         style: Style for the recipe to conform to.
         company: Brewing Company that owns the recipe.
         volume: Amount of beer to be brewed. Units: gallons.
+        pre_boil_volume_gallons: Amount of wort expected to enter into the boil
+            kettle.
+        post_boil_volume_gallons: Amount of wort expected to exit the boil
+            kettle and enter fermenter. This - `pre_boil_volume_gallons`
+            influences the boil off power during boil.
         brewhouse_efficiency: The per-unit efficiency of the brewhouse to
             convert sugars from the grain.
         strike_temperature: Temperature to raise Hot Liquor Tun to before strike
@@ -675,6 +680,8 @@ class Recipe(models.Model):
     company = models.ForeignKey(BrewingCompany, null=True)
 
     volume = models.FloatField(default=0.0)
+    pre_boil_volume_gallons = models.FloatField(default=0.0)
+    post_boil_volume_gallons = models.FloatField(default=0.0)
 
     brewhouse_efficiency = models.FloatField(default=1.0)
 
