@@ -1,0 +1,137 @@
+version: 2.1 # 2.1 required for some orbs.
+# change to trigger new workflow: 2
+
+orbs:
+  gcp-gcr: circleci/gcp-gcr@0.6.1
+  gcp-gke: duksis/gcp-gke@0.1.9
+
+jobs:
+  # Runs the Play application unit tests using a local postgres instance.
+  test:
+    docker:
+    - image: python:3.5
+
+    working_directory: ~/joulia_webserver
+
+    steps:
+
+    - checkout
+
+    # Install Python dev Dependencies.
+    - run:
+        name: Install OS Dependencies
+        command: |
+            apt-get update
+            apt-get install -y build-essential
+            apt-get install -y python-dev
+            apt-get install -y python3-dev
+            apt-get install -y default-libmysqlclient-dev
+
+    # Download and cache dependencies
+    - restore_cache:
+        keys:
+        - v2-dependencies-{{ checksum "requirements.txt" }}
+        # fallback to using the latest cache if no exact match is found
+        - v2-dependencies-
+
+    - run:
+        name: Install Dependencies
+        command: pip install -r requirements.txt
+
+    - save_cache:
+        paths:
+        - ~/.cache/pip
+        key: v2-dependencies-{{ checksum "requirements.txt" }}
+
+    - run:
+        name: Run Tests
+        command: python manage.py test --pattern="*test*.py"
+
+
+  # Builds docker container and pushes to Google Container Repository.
+  push-image:
+    docker:
+    - image: google/cloud-sdk
+
+    steps:
+    - checkout
+
+    - setup_remote_docker
+
+    - gcp-gcr/gcr-auth:
+        gcloud-service-key: GCLOUD_SERVICE_KEY
+        google-compute-zone: GOOGLE_COMPUTE_ZONE
+        google-project-id: GOOGLE_PROJECT_ID
+
+    - gcp-gcr/build-image:
+        google-project-id: GOOGLE_PROJECT_ID
+        image: joulia-webserver
+        registry-url: gcr.io
+        tag: $CIRCLE_SHA1
+
+    - gcp-gcr/push-image:
+        google-project-id: GOOGLE_PROJECT_ID
+        image: joulia-webserver
+        registry-url: gcr.io
+        tag: $CIRCLE_SHA1
+
+    - gcp-gcr/tag-image:
+        google-project-id: GOOGLE_PROJECT_ID
+        image: joulia-webserver
+        registry-url: gcr.io
+        source-tag: $CIRCLE_SHA1
+        target-tag: $CIRCLE_BRANCH
+
+    - gcp-gcr/tag-image:
+        google-project-id: GOOGLE_PROJECT_ID
+        image: joulia-webserver
+        registry-url: gcr.io
+        source-tag: $CIRCLE_SHA1
+        target-tag: latest
+
+  # Rolls deployment out to kubernetes cluster.
+  deploy-to-kubernetes-cluster:
+    parameters:
+      deployment:
+        description: The Kubernetes deployment name to deploy to.
+        type: string
+
+      namespace:
+        description: The namespace the deployment resides in.
+        type: string
+        default: default
+
+    docker:
+      - image: google/cloud-sdk
+
+    steps:
+      - gcp-gke/install
+      - gcp-gke/init
+      - gcp-gke/rollout-image:
+          cluster: $GOOGLE_CLUSTER_NAME
+          namespace: <<parameters.namespace>>
+          deployment: <<parameters.deployment>>
+          container: joulia-webserver
+          image: gcr.io/core-song-155902/joulia-webserver:$CIRCLE_SHA1
+
+workflows:
+  version: 2
+  test_and_deploy:
+    jobs:
+    - test
+    - push-image:
+        requires:
+        - test
+        filters:
+          branches:
+            only:
+            - master
+    - deploy-to-kubernetes-cluster:
+        deployment: joulia-webserver
+        namespace: default
+        requires:
+          - push-image
+        filters:
+          branches:
+            only:
+              - master

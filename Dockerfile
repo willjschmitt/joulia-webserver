@@ -4,11 +4,8 @@ MAINTAINER William Schmitt (william@wschmitt.com)
 RUN apt-get update
 RUN apt-get install -y build-essential
 RUN apt-get install -y python-dev
-RUN apt-get install -y libmysqlclient-dev
-RUN apt-get install -y nodejs-legacy
-RUN apt-get install -y npm
-
-RUN npm install -g bower
+RUN apt-get install -y python3-dev
+RUN apt-get install -y default-libmysqlclient-dev
 
 RUN mkdir /code
 ADD . /code/
