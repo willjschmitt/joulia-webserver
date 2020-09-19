@@ -2,8 +2,57 @@ version: 2.1 # 2.1 required for some orbs.
 # change to trigger new workflow: 2
 
 orbs:
+  gcp-cli: circleci/gcp-cli@1.8.4
   gcp-gcr: circleci/gcp-gcr@0.6.1
-  gcp-gke: duksis/gcp-gke@0.1.9
+  gcp-gke: circleci/gcp-gke@1.0.3
+
+commands:
+  # Rolls deployment out to kubernetes cluster.
+  deploy-to-kubernetes-cluster:
+    parameters:
+      gcloud-service-key:
+        description: The environment variable to authenticate with.
+        type: env_var_name
+
+      google-project-id:
+        description: The Project Id containing the cluster.
+        type: env_var_name
+
+      cluster:
+        description: The Kubernetes cluster to update the deployment in.
+        type: env_var_name
+
+      deployment:
+        description: The Kubernetes deployment name to deploy to.
+        type: string
+
+      namespace:
+        description: The namespace the deployment resides in.
+        type: string
+        default: default
+
+      container:
+        description: The container to update in the deployment pods.
+        type: string
+
+      image:
+        description: Path to image to use for deployment.
+        type: string
+
+    steps:
+      - gcp-gke/install
+      - gcp-gke/update-kubeconfig-with-credentials:
+          gcloud-service-key: <<parameters.gcloud-service-key>>
+          google-project-id: <<parameters.google-project-id>>
+          cluster: $<<parameters.cluster>>
+          perform-login: true
+      - gcp-gke/rollout-image:
+          cluster: $<<parameters.cluster>>
+          namespace: <<parameters.namespace>>
+          deployment: <<parameters.deployment>>
+          container: <<parameters.container>>
+          image: <<parameters.image>>
+          tag: $CIRCLE_SHA1
 
 jobs:
   # Runs the Play application unit tests using a local postgres instance.
@@ -90,29 +139,20 @@ jobs:
         target-tag: latest
 
   # Rolls deployment out to kubernetes cluster.
-  deploy-to-kubernetes-cluster:
-    parameters:
-      deployment:
-        description: The Kubernetes deployment name to deploy to.
-        type: string
-
-      namespace:
-        description: The namespace the deployment resides in.
-        type: string
-        default: default
-
+  deploy-webserver-to-prod:
     docker:
       - image: google/cloud-sdk
 
     steps:
-      - gcp-gke/install
-      - gcp-gke/init
-      - gcp-gke/rollout-image:
-          cluster: $GOOGLE_CLUSTER_NAME
-          namespace: <<parameters.namespace>>
-          deployment: <<parameters.deployment>>
+      - deploy-to-kubernetes-cluster:
+          deployment: joulia-webserver
+          namespace: default
+
+          gcloud-service-key: GCLOUD_SERVICE_KEY
+          google-project-id: GOOGLE_PROJECT_ID
+          cluster: GOOGLE_CLUSTER_NAME
           container: joulia-webserver
-          image: gcr.io/core-song-155902/joulia-webserver:$CIRCLE_SHA1
+          image: gcr.io/core-song-155902/joulia-webserver
 
 workflows:
   version: 2
@@ -126,9 +166,7 @@ workflows:
           branches:
             only:
             - master
-    - deploy-to-kubernetes-cluster:
-        deployment: joulia-webserver
-        namespace: default
+    - deploy-webserver-to-prod:
         requires:
           - push-image
         filters:
